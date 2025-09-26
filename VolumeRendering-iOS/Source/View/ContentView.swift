@@ -246,10 +246,20 @@ struct DrawOptionView: View {
             }.frame(height: 30)
 
             if model.method == .mpr {
+                // Picker do plano
                 HStack {
-                    Text("Axial Slice").foregroundColor(.white)
+                    Picker("Plano MPR", selection: $model.mprPlane) {
+                        ForEach(DrawOptionModel.MPRPlane.allCases, id: \.self) {
+                            Text($0.rawValue)
+                        }
+                    }
+                    .pickerStyle(SegmentedPickerStyle())
+                    .onChange(of: model.mprPlane) { SceneViewController.Instance.setMPRPlane($0) }
+                }.frame(height: 30)
 
-                    // Slider normalizado 0...1 (passa Double, converte para Float)
+                // Slider da fatia (dinâmico por plano)
+                HStack {
+                    Text("\(model.mprPlane.rawValue.capitalized) Slice").foregroundColor(.white)
                     Slider(
                         value: Binding(
                             get: { Double(model.mprAxialSlice) },
@@ -257,15 +267,12 @@ struct DrawOptionView: View {
                         ),
                         in: 0.0...1.0,
                         step: {
-                            // passo coerente: 1/(nFatias-1); fallback 0.01
-                            let z = max(1, SceneViewController.Instance.mprDimZ)
-                            return z > 1 ? 1.0 / Double(z - 1) : 0.01
+                            let n = max(1, SceneViewController.Instance.mprDimCurrent)
+                            return n > 1 ? 1.0 / Double(n - 1) : 0.01
                         }()
                     )
                     .padding()
-                    .onChange(of: model.mprAxialSlice) { val in
-                        SceneViewController.Instance.updateAxialSlice(normalizedValue: val)
-                    }
+                    .onChange(of: model.mprAxialSlice) { SceneViewController.Instance.updateSlice(normalizedValue: $0) }
                 }
                 .frame(height: 30)
             }
@@ -280,4 +287,3 @@ struct ContentView_Previews: PreviewProvider {
             .previewDevice("iPad Pro (11-inch) (3rd generation)")
     }
 }
-

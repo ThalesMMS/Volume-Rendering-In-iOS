@@ -117,7 +117,8 @@ final class VolumeCubeMaterial: SCNMaterial {
 
     private func pushUniforms() {
         var u = uniforms
-        let buffer = NSData(bytes: &u, length: Uniforms.size)
+        // stride garante padding correto para Metal
+        let buffer = NSData(bytes: &u, length: Uniforms.stride)
         setValue(buffer, forKey: uniformsKey)
     }
 

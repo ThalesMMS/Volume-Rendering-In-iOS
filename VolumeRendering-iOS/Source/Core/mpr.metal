@@ -44,10 +44,10 @@ struct VSOut {
     float2 uv;
 };
 
-vertex VSOut mpr_vertex(VertexIn in                  [[ stage_in ]],
-                        constant NodeBuffer& scnNode [[ buffer(1) ]]) {
+vertex VSOut mpr_vertex(VertexIn in                   [[ stage_in ]],
+                        constant NodeBuffer& scn_node [[ buffer(1) ]]) {
     VSOut out;
-    out.position = Unity::ObjectToClipPos(float4(in.position, 1.0f), scnNode);
+    out.position = Unity::ObjectToClipPos(float4(in.position, 1.0f), scn_node);
     out.uv = in.uv;
     return out;
 }
@@ -59,8 +59,8 @@ inline float sampleDensity01(texture3d<short, access::sample> volume, float3 p,
 }
 
 fragment float4 mpr_fragment(VSOut in                                       [[stage_in]],
-                             constant SCNSceneBuffer& scnFrame               [[buffer(0)]],
-                             constant NodeBuffer& scnNode                    [[buffer(1)]],
+                             constant SCNSceneBuffer& scn_frame              [[buffer(0)]],
+                             constant NodeBuffer& scn_node                   [[buffer(1)]],
                              constant MPRUniforms& U                         [[buffer(4)]],
                              texture3d<short, access::sample> volume         [[texture(0)]],
                              texture2d<float, access::sample> transferColor  [[texture(3)]]) {

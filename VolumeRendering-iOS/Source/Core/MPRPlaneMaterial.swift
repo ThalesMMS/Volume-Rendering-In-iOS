@@ -44,12 +44,18 @@ final class MPRPlaneMaterial: SCNMaterial {
     // MARK: - Estado
     private var uniforms = Uniforms()
     private let uniformsKey = "U"   // bate com [[ buffer(4) ]] no shader
-    private let dicomKey    = "volume"      // bate com [[ texture(0) ]]
+    private let volumeKey = "volume" // [[ texture(0) ]]
     private let tfKey       = "transferColor" // bate com [[ texture(3) ]]
 
     // Mantemos dimensão/resolução para conveniências (slice index -> coord normalizada).
     private(set) var dimension: int3 = int3(1,1,1)
     private(set) var resolution: float3 = float3(1,1,1)
+
+    /// Define dims e spacing diretamente (caminho MPR-only).
+    func setDataset(dimension: int3, resolution: float3) {
+        self.dimension = dimension
+        self.resolution = resolution
+    }
 
     // MARK: - Init
     init(device: MTLDevice) {
@@ -73,22 +79,24 @@ final class MPRPlaneMaterial: SCNMaterial {
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError("init(coder:) not implemented") }
 
+    private func setVolumeTexture(_ texture: MTLTexture) {
+        let prop = SCNMaterialProperty(contents: texture as Any)
+        setValue(prop, forKey: volumeKey)
+    }
+
     // MARK: - Binding helpers
     private func setUniforms(_ u: Uniforms) {
         var tmp = u
-        let buffer = NSData(bytes: &tmp, length: Uniforms.size)
+        // IMPORTANTE: usar stride por causa do alinhamento de float3 (16B) em Metal.
+        let buffer = NSData(bytes: &tmp, length: Uniforms.stride)
         setValue(buffer, forKey: uniformsKey)
-    }
-
-    private func setDicomTexture(_ texture: MTLTexture) {
-        let prop = SCNMaterialProperty(contents: texture as Any)
-        setValue(prop, forKey: dicomKey)
+        print("Uniforms size=\(Uniforms.size) stride=\(Uniforms.stride)")
     }
 
     private func setTransferFunctionTexture(_ texture: MTLTexture) {
-        let prop = SCNMaterialProperty(contents: texture as Any)
-        setValue(prop, forKey: tfKey)
+        setValue(SCNMaterialProperty(contents: texture), forKey: tfKey)
     }
+
 
     // MARK: - API pública (integração)
     /// Injeta a textura 3D do volume e captura dimension/resolution
@@ -101,7 +109,7 @@ final class MPRPlaneMaterial: SCNMaterial {
         }
         self.dimension = factory.dimension
         self.resolution = factory.resolution
-        setDicomTexture(tex)
+        setVolumeTexture(tex)
     }
 
     func setHU(min: Int32, max: Int32) {

@@ -7,10 +7,16 @@
 
 import Foundation
 import SceneKit
+import Metal
 
 class SceneViewController: NSObject {
     static let Instance = SceneViewController() // like Singleton
-    
+
+    struct DatasetMeta {
+        let dimension: int3
+        let resolution: float3
+    }
+
     enum RenderMode: String, CaseIterable, Identifiable {
         var id: RawValue { rawValue }
         case surf, dvr, mip, minip, avg, mpr
@@ -443,3 +449,18 @@ private extension SceneViewController {
     }
 }
 
+// MARK: - Dataset Snapshot Helpers
+extension SceneViewController {
+    func currentVolumeTexture() -> MTLTexture? {
+        mat.currentVolumeTexture()
+    }
+
+    func currentTFTexture() -> MTLTexture? {
+        mat.currentTransferFunctionTexture()
+    }
+
+    func currentDatasetMeta() -> DatasetMeta? {
+        let meta = mat.datasetMeta
+        return DatasetMeta(dimension: meta.dimension, resolution: meta.resolution)
+    }
+}

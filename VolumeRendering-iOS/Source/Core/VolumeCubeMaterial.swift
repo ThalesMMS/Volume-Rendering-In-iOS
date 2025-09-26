@@ -144,6 +144,22 @@ final class VolumeCubeMaterial: SCNMaterial {
         setValue(prop, forKey: tfKey)
     }
 
+    // MARK: - Snapshots
+
+    func currentVolumeTexture() -> MTLTexture? {
+        let prop = value(forKey: dicomKey) as? SCNMaterialProperty
+        return prop?.contents as? MTLTexture
+    }
+
+    func currentTransferFunctionTexture() -> MTLTexture? {
+        let prop = value(forKey: tfKey) as? SCNMaterialProperty
+        return prop?.contents as? MTLTexture
+    }
+
+    var datasetMeta: (dimension: int3, resolution: float3) {
+        (textureGenerator.dimension, textureGenerator.resolution)
+    }
+
     // MARK: - API de controle
 
     func setMethod(method: Method) {

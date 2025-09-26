@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		121180022E873D1B00EA1DB6 /* TriPlanarMPR.swift in Sources */ = {isa = PBXBuildFile; fileRef = 121180012E873D1B00EA1DB6 /* TriPlanarMPR.swift */; };
 		126AB2192E872A5500051910 /* AVKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 126AB2182E872A5500051910 /* AVKit.framework */; };
 		12CB89792E86CF76009C2E22 /* mpr.metal in Sources */ = {isa = PBXBuildFile; fileRef = 12CB89772E86CF76009C2E22 /* mpr.metal */; };
 		12CB897A2E86CF76009C2E22 /* MPRPlaneMaterial.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12CB89782E86CF76009C2E22 /* MPRPlaneMaterial.swift */; };
@@ -34,6 +35,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		121180012E873D1B00EA1DB6 /* TriPlanarMPR.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TriPlanarMPR.swift; sourceTree = "<group>"; };
 		126AB2182E872A5500051910 /* AVKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVKit.framework; path = System/Library/Frameworks/AVKit.framework; sourceTree = SDKROOT; };
 		12CB89762E86CF76009C2E22 /* DICOMGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DICOMGeometry.swift; sourceTree = "<group>"; };
 		12CB89772E86CF76009C2E22 /* mpr.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = mpr.metal; sourceTree = "<group>"; };
@@ -104,6 +106,7 @@
 		66320B4628430A3B005D3347 /* View */ = {
 			isa = PBXGroup;
 			children = (
+				121180012E873D1B00EA1DB6 /* TriPlanarMPR.swift */,
 				9C21FBCC27A0D860004CE254 /* SceneView.swift */,
 				9C8B3E6B279E8AA600599C97 /* ContentView.swift */,
 				9C8B3E69279E8AA600599C97 /* VolumeRendering_iOSApp.swift */,
@@ -281,6 +284,7 @@
 				66072805284328D80028EE15 /* shared.metal in Sources */,
 				9C21FBCF27A0E904004CE254 /* VolumeTexture.swift in Sources */,
 				E395877B27A3C445003F54D1 /* TransferFunction.swift in Sources */,
+				121180022E873D1B00EA1DB6 /* TriPlanarMPR.swift in Sources */,
 				9C21FBCD27A0D860004CE254 /* SceneView.swift in Sources */,
 				12CB89792E86CF76009C2E22 /* mpr.metal in Sources */,
 				12CB897A2E86CF76009C2E22 /* MPRPlaneMaterial.swift in Sources */,

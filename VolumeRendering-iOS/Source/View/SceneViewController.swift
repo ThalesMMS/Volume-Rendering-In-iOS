@@ -32,20 +32,23 @@ class SceneViewController: NSObject {
     private var interactionFactor: Float = 0.35 // 35% dos steps durante interação
     
     override public init() { super.init() }
+
+    // Conveniência para a UI: número de fatias no eixo Z
+    var mprDimZ: Int {
+        Int(mprMat?.dimension.z ?? 1)
+    }
     
     func onAppear(_ view: SCNView) {
-        // Verificar device Metal
-        guard let device = view.device else {
-            print("🚨 ERRO: Dispositivo Metal não disponível")
+         // Device Metal com fallback
+        guard let dev = view.device ?? MTLCreateSystemDefaultDevice() else {
+            assertionFailure("Metal não disponível no dispositivo")
             return
         }
-        self.device = device
-        
-        // Verificar scene
-        guard let scene = view.scene else {
-            print("🚨 ERRO: Scene não inicializada")
-            return
-        }
+        self.device = dev
+
+        // Cena
+        let scene = view.scene ?? SCNScene()
+        view.scene = scene
         root = scene.rootNode
         cameraController = view.defaultCameraController
         
@@ -71,16 +74,16 @@ class SceneViewController: NSObject {
         volume.scale = SCNVector3(mat.scale)
         root.addChildNode(volume)
         
-//        // for depth test
-//        let node2 = SCNNode(geometry: SCNBox(width: 0.2, height: 0.2, length: 0.2, chamferRadius: 0))
-//        node2.geometry?.firstMaterial?.diffuse.contents = UIColor.yellow
-//        node2.position = SCNVector3Make(0.5, 0, 0.5)
-//        root.addChildNode(node2)
-//
-//        let node3 = SCNNode(geometry: SCNSphere(radius: 0.2))
-//        node3.geometry?.firstMaterial?.diffuse.contents = UIColor.green
-//        node3.position = SCNVector3Make(-0.5, 0, 0.5)
-//        root.addChildNode(node3)
+        // for depth test
+        // let node2 = SCNNode(geometry: SCNBox(width: 0.2, height: 0.2, length: 0.2, chamferRadius: 0))
+        // node2.geometry?.firstMaterial?.diffuse.contents = UIColor.yellow
+        // node2.position = SCNVector3Make(0.5, 0, 0.5)
+        // root.addChildNode(node2)
+  
+        // let node3 = SCNNode(geometry: SCNSphere(radius: 0.2))
+        // node3.geometry?.firstMaterial?.diffuse.contents = UIColor.green
+        // node3.position = SCNVector3Make(-0.5, 0, 0.5)
+        // root.addChildNode(node3)
         
         cameraController.target = volume.boundingSphere.center
 
@@ -157,24 +160,15 @@ class SceneViewController: NSObject {
         activeRenderMode = mode
         let isMprActive = (mode == .mpr)
 
-        // 1) NÃO esconda o 'volume' (senão o MPR some junto)
-        volume.isHidden = false
+        // Mostre só o que interessa
+        volume.isHidden  = isMprActive       // DVR fora quando MPR está ativo
+        mprNode?.isHidden = !isMprActive     // plano MPR visível
 
-        // 2) Deixe o volume “mudo” quando em MPR (sem atrapalhar)
-        if isMprActive {
-            mat.transparency = 0.0          // não desenha cor
-            mat.writesToDepthBuffer = false // não disputa profundidade
-        } else {
-            mat.transparency = 1.0
-            mat.writesToDepthBuffer = true
+        if !isMprActive {
+            mat.cullMode = .front
             mat.setMethod(method: mapToVRMethod(mode))
         }
 
-        // 3) Mostra/oculta o plano MPR
-        mprNode?.isHidden = !isMprActive
-
-        // 4) (já no código) cull para VR/MPR
-        mat.cullMode = isMprActive ? .back : .front
     }
 
     private func mapToVRMethod(_ mode: RenderMode) -> VolumeCubeMaterial.Method {

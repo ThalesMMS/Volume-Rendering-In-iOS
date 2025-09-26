@@ -191,7 +191,10 @@ struct DrawOptionView: View {
             VStack {
                 HStack {
                     Text("HU Min").foregroundColor(.white)
-                    Slider(value: $model.huMinHU, in: -1200...3000, step: 1)
+                    Slider(
+                        value: Binding(get: { Double(model.huMinHU) }, set: { model.huMinHU = Float($0) }),
+                        in: -1200...3000, step: 1
+                    )
                         .padding()
                         .onChange(of: model.huMinHU) { _ in
                             SceneViewController.Instance.setHuWindow(minHU: Int32(model.huMinHU), maxHU: Int32(model.huMaxHU))
@@ -200,7 +203,10 @@ struct DrawOptionView: View {
 
                 HStack {
                     Text("HU Max").foregroundColor(.white)
-                    Slider(value: $model.huMaxHU, in: -1200...3000, step: 1)
+                    Slider(
+                        value: Binding(get: { Double(model.huMaxHU) }, set: { model.huMaxHU = Float($0) }),
+                        in: -1200...3000, step: 1
+                    )
                         .padding()
                         .onChange(of: model.huMaxHU) { _ in
                             SceneViewController.Instance.setHuWindow(minHU: Int32(model.huMinHU), maxHU: Int32(model.huMaxHU))
@@ -211,7 +217,10 @@ struct DrawOptionView: View {
             VStack {
                 HStack {
                     Text("Gate Floor").foregroundColor(.white)
-                    Slider(value: $model.gateFloor, in: 0...1, step: 0.01)
+                    Slider(
+                        value: Binding(get: { Double(model.gateFloor) }, set: { model.gateFloor = Float($0) }),
+                        in: 0.0...1.0, step: 0.01
+                    )
                         .padding()
                         .onChange(of: model.gateFloor) { _ in
                             SceneViewController.Instance.setDensityGate(floor: model.gateFloor, ceil: model.gateCeil)
@@ -220,7 +229,10 @@ struct DrawOptionView: View {
 
                 HStack {
                     Text("Gate Ceil").foregroundColor(.white)
-                    Slider(value: $model.gateCeil, in: 0...1, step: 0.01)
+                    Slider(
+                        value: Binding(get: { Double(model.gateCeil) }, set: { model.gateCeil = Float($0) }),
+                        in: 0.0...1.0, step: 0.01
+                    )
                         .padding()
                         .onChange(of: model.gateCeil) { _ in
                             SceneViewController.Instance.setDensityGate(floor: model.gateFloor, ceil: model.gateCeil)
@@ -234,33 +246,28 @@ struct DrawOptionView: View {
             }.frame(height: 30)
 
             if model.method == .mpr {
-                VStack {
-                    HStack {
-                        Text("Axial Slice")
-                            .foregroundColor(.white)
-                        Slider(value: $model.mprAxialSlice, in: 0...1, step: 0.01)
-                            .padding()
-                            .onChange(of: model.mprAxialSlice) { SceneViewController.Instance.updateAxialSlice(normalizedValue: $0) }
-                    }.frame(height: 30)
+                HStack {
+                    Text("Axial Slice").foregroundColor(.white)
 
-                    HStack {
-                        Text("MPR Plane")
-                            .foregroundColor(.white)
-                        Picker("Plano", selection: $model.mprPlane) {
-                            Text("axial").tag(DrawOptionModel.MPRPlane.axial)
-                            Text("coronal").tag(DrawOptionModel.MPRPlane.coronal)
-                            Text("sagittal").tag(DrawOptionModel.MPRPlane.sagittal)
-                        }
-                        .pickerStyle(SegmentedPickerStyle())
-                        .onChange(of: model.mprPlane) { plane in
-                            switch plane {
-                            case .axial:    SceneViewController.Instance.setMPRPlaneAxial(slice:  Int( (SceneViewController.Instance.mprDimZ-1)/2 ))
-                            case .coronal:  SceneViewController.Instance.setMPRPlaneCoronal(row:  Int( (SceneViewController.Instance.mprDimY-1)/2 ))
-                            case .sagittal: SceneViewController.Instance.setMPRPlaneSagittal(column:Int( (SceneViewController.Instance.mprDimX-1)/2 ))
-                            }
-                        }
-                    }.frame(height: 30)
+                    // Slider normalizado 0...1 (passa Double, converte para Float)
+                    Slider(
+                        value: Binding(
+                            get: { Double(model.mprAxialSlice) },
+                            set: { model.mprAxialSlice = Float($0) }
+                        ),
+                        in: 0.0...1.0,
+                        step: {
+                            // passo coerente: 1/(nFatias-1); fallback 0.01
+                            let z = max(1, SceneViewController.Instance.mprDimZ)
+                            return z > 1 ? 1.0 / Double(z - 1) : 0.01
+                        }()
+                    )
+                    .padding()
+                    .onChange(of: model.mprAxialSlice) { val in
+                        SceneViewController.Instance.updateAxialSlice(normalizedValue: val)
+                    }
                 }
+                .frame(height: 30)
             }
         }
     }

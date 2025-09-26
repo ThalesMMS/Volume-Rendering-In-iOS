@@ -265,7 +265,7 @@ struct DrawOptionView: View {
 
             // === Em MPR, o controle de navegação é pelas linhas; removi o slider de fatia ===
             if model.method == .mpr {
-                Text("Tri‑Planar ativo: arraste as linhas nos 3 painéis para navegar; use rotação de 2 dedos para MPR oblíquo.")
+                Text("Tri‑Planar active: drag the lines in the 3 panels to navigate; use 2-finger rotation for oblique MPR.")
                     .foregroundColor(.white)
                     .font(.footnote)
             }

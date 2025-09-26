@@ -1,53 +1,56 @@
 # Volume-Rendering-In-iOS
-Implement volume-rendering for patient-data on iOS.
-   
-     
+Direct and projected volume rendering on iOS using SceneKit + Metal.
+
 ### Tech
-- Metal Shader (Graphic)
-- SceneKit (Scene Graph)
+- Metal (fragment ray-marching for DVR/MIP/MinIP/AIP)
+- SceneKit (scene graph and material hosting)
 
+### Data
+- Sample volumes are included in the app bundle under `VolumeRendering-iOS/Resource/Images/`
+  - `chest.raw.zip` (Int16 signed LE)
+  - `head.raw.zip` (Int16 signed LE)
+- Transfer Functions (TF) in `VolumeRendering-iOS/Resource/TransferFunction/`
+  - `ct_arteries.tf`, `ct_entire.tf`, `ct_lung.tf`
 
-### Source Project
-[Unity Volume Rendering](https://github.com/mlavik1/UnityVolumeRendering)
+### Features
+- DVR, Surface, MIP, MinIP, Average projections
+- Transfer Function 1D (shared between DVR and MPR)
+- Optional TF on projections (MIP/MinIP/AIP)
+- HU gating for projections with configurable window
+- MPR plane with optional TF
+- Empty‑space skipping (conservative) for DVR
 
+### How to run locally
+1. Install Git LFS and fetch large files:
+   ```bash
+   brew install git-lfs
+   git lfs install
+   git lfs pull
+   ```
+2. Open the Xcode project `VolumeRendering-iOS.xcodeproj`.
+3. Select a device (prefer iPhone 15 Pro Max) and run.
 
-## How To Run in your Local 
-   
-### At First,
-You should set git-lfs setting.   
-Because raw data file is so bigger than supported in git.
+### Screenshots
 
-install git-lfs first,
-```
-brew install git-lfs
-```
-
-and set git lfs on in your local
-```
-git-lfs install
-```
-
-and pull lfs from server
-```
-git lfs pull
-``` 
-       
-### Screenshot
-
-|surface rendring|direct volume rendering|maximum intensity projection|
+|Surface Rendering|Direct Volume Rendering|Maximum Intensity Projection|
 |-|-|-|
-|![](https://github.com/eunwonki/Metal-Based-Volume-Rendering-In-iOS/blob/main/Screenshot/6.jpg?raw=true)|![](https://github.com/eunwonki/Metal-Based-Volume-Rendering-In-iOS/blob/main/Screenshot/10.jpeg?raw=true)|![](https://github.com/eunwonki/Metal-Based-Volume-Rendering-In-iOS/blob/main/Screenshot/7.jpeg?raw=true)|
-     
-       
-       
-#### Direct Volume Rendering    
+|![](Screenshot/6.jpg)|![](Screenshot/10.jpeg)|![](Screenshot/7.jpeg)|
+
+#### Direct Volume Rendering
 |CT-Coronary-Arteries|CT-Chest-Entire|CT-Lung|
-|- |-|-|
-|![](https://github.com/eunwonki/Metal-Based-Volume-Rendering-In-iOS/blob/main/Screenshot/9.jpeg?raw=true)|![](https://github.com/eunwonki/Metal-Based-Volume-Rendering-In-iOS/blob/main/Screenshot/10.jpeg?raw=true)|![](https://github.com/eunwonki/Metal-Based-Volume-Rendering-In-iOS/blob/main/Screenshot/12.jpg?raw=true)|
-    
+|-|-|-|
+|![](Screenshot/9.jpeg)|![](Screenshot/10.jpeg)|![](Screenshot/12.jpg)|
 
 #### Lighting
 |Lighting Off|Lighting On|
 |-|-|
-|![](https://github.com/eunwonki/Metal-Based-Volume-Rendering-In-iOS/blob/main/Screenshot/9.jpeg?raw=true)|![](https://github.com/eunwonki/Metal-Based-Volume-Rendering-In-iOS/blob/main/Screenshot/8.jpeg?raw=true)|
-![](https://github.com/eunwonki/Metal-Based-Volume-Rendering-In-iOS/blob/main/Screenshot/10.jpeg?raw=true)|![](https://github.com/eunwonki/Metal-Based-Volume-Rendering-In-iOS/blob/main/Screenshot/11.jpeg?raw=true)|
+|![](Screenshot/9.jpeg)|![](Screenshot/8.jpeg)|
+
+### Licenses
+- This project is based on `Unity Volume Rendering` (`mlavik1/UnityVolumeRendering`). See upstream for original license.
+- New code for iOS/Metal/SceneKit is provided under the same license as this repository.
+
+### Known issues
+- Performance metrics depend on device; baseline validation targets iPhone 15 Pro Max.
+- Some presets may require TF shift adjustments for best visual results.
+- Large RAW datasets require Git LFS; ensure `git lfs pull` completed successfully.

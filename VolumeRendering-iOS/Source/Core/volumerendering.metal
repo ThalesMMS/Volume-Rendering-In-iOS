@@ -9,8 +9,8 @@ using namespace metal;
 
 // Deve casar byte-a-byte com VolumeCubeMaterial.Uniforms (Swift).
 struct Uniforms {
-    bool  isLightingOn;
-    bool  isBackwardOn;
+    int   isLightingOn;
+    int   isBackwardOn;
 
     int   method;              // 0=surf, 1=dvr, 2=mip, 3=minip, 4=avg
     int   renderingQuality;
@@ -18,16 +18,17 @@ struct Uniforms {
     int   voxelMinValue;
     int   voxelMaxValue;
 
-    // Gating (projections), normalizado [0..1] após HU→[0..1]
+    // Gating (projections)
     float densityFloor;
     float densityCeil;
+    int   gateHuMin; int gateHuMax; int useHuGate;
 
     // Dimensão real do volume (para gradiente correto)
     int   dimX;
     int   dimY;
     int   dimZ;
 
-    bool  useTFProj;           // aplica TF nas projeções?
+    int   useTFProj;           // aplica TF nas projeções?
 
     // padding/alinhamento
     int   _pad0;
@@ -142,6 +143,9 @@ direct_volume_rendering(VertexOut in,
     ray.startPosition = ray.startPosition + (2 * ray.direction / raymarch.numSteps);
 
     float4 col = float4(0.0f);
+    int zeroCount = 0;
+    constexpr int ZRUN = 4;
+    constexpr int ZSKIP = 3;
     for (int iStep = 0; iStep < raymarch.numSteps; iStep++)
     {
         const float t = iStep * raymarch.numStepsRecip;
@@ -165,6 +169,18 @@ direct_volume_rendering(VertexOut in,
 
         if (density < 0.1f)
             src.a = 0.0f;
+
+        // Empty-space skipping (transparência consecutiva)
+        if (src.a < 0.001f) {
+            zeroCount++;
+            if (zeroCount >= ZRUN) {
+                iStep += ZSKIP;
+                zeroCount = 0;
+                continue;
+            }
+        } else {
+            zeroCount = 0;
+        }
 
         if (isBackwardOn) {
             col.rgb = src.a * src.rgb + (1.0f - src.a) * col.rgb;
@@ -191,6 +207,7 @@ maximum_intensity_projection(VertexOut in,
                              int quality, short minV, short maxV,
                              float densityFloor, float densityCeil,
                              bool useTFProj,
+                             int gateHuMin, int gateHuMax, int useHuGate,
                              texture3d<short, access::sample> volume,
                              texture2d<float, access::sample> tfTable)
 {
@@ -214,9 +231,13 @@ maximum_intensity_projection(VertexOut in,
         short hu = VR::getDensity(volume, currPos);
         float density = Util::normalize(hu, minV, maxV);
 
-        // Gating
-        if (density < densityFloor || density > densityCeil)
-            continue;
+        bool pass;
+        if (useHuGate != 0) {
+            pass = (hu >= gateHuMin) && (hu <= gateHuMax);
+        } else {
+            pass = (density >= densityFloor) && (density <= densityCeil);
+        }
+        if (!pass) continue;
 
         maxDensity = max(maxDensity, density);
         hit = true;
@@ -234,6 +255,7 @@ minimum_intensity_projection(VertexOut in,
                              int quality, short minV, short maxV,
                              float densityFloor, float densityCeil,
                              bool useTFProj,
+                             int gateHuMin, int gateHuMax, int useHuGate,
                              texture3d<short, access::sample> volume,
                              texture2d<float, access::sample> tfTable)
 {
@@ -257,9 +279,13 @@ minimum_intensity_projection(VertexOut in,
 
         short hu = VR::getDensity(volume, currPos);
         float density = Util::normalize(hu, minV, maxV);
-
-        if (density < densityFloor || density > densityCeil)
-            continue;
+        bool pass;
+        if (useHuGate != 0) {
+            pass = (hu >= gateHuMin) && (hu <= gateHuMax);
+        } else {
+            pass = (density >= densityFloor) && (density <= densityCeil);
+        }
+        if (!pass) continue;
 
         minDensity = min(minDensity, density);
         hit = true;
@@ -277,6 +303,7 @@ average_intensity_projection(VertexOut in,
                              int quality, short minV, short maxV,
                              float densityFloor, float densityCeil,
                              bool useTFProj,
+                             int gateHuMin, int gateHuMax, int useHuGate,
                              texture3d<short, access::sample> volume,
                              texture2d<float, access::sample> tfTable)
 {
@@ -300,9 +327,13 @@ average_intensity_projection(VertexOut in,
 
         short hu = VR::getDensity(volume, currPos);
         float density = Util::normalize(hu, minV, maxV);
-
-        if (density < densityFloor || density > densityCeil)
-            continue;
+        bool pass;
+        if (useHuGate != 0) {
+            pass = (hu >= gateHuMin) && (hu <= gateHuMax);
+        } else {
+            pass = (density >= densityFloor) && (density <= densityCeil);
+        }
+        if (!pass) continue;
 
         acc += density;
         cnt += 1;
@@ -326,8 +357,8 @@ volume_fragment(VertexOut in [[stage_in]],
     int  quality      = uniforms.renderingQuality;
     int  minValue     = uniforms.voxelMinValue;
     int  maxValue     = uniforms.voxelMaxValue;
-    bool isLightingOn = uniforms.isLightingOn;
-    bool isBackwardOn = uniforms.isBackwardOn;
+    bool isLightingOn = (uniforms.isLightingOn != 0);
+    bool isBackwardOn = (uniforms.isBackwardOn != 0);
 
     float3 dim = float3(uniforms.dimX, uniforms.dimY, uniforms.dimZ);
 
@@ -351,28 +382,32 @@ volume_fragment(VertexOut in [[stage_in]],
             return maximum_intensity_projection(in, scn_frame, scn_node,
                                                 quality, (short)minValue, (short)maxValue,
                                                 uniforms.densityFloor, uniforms.densityCeil,
-                                                uniforms.useTFProj,
+                                                (uniforms.useTFProj != 0),
+                                                uniforms.gateHuMin, uniforms.gateHuMax, uniforms.useHuGate,
                                                 dicom, transferColor);
 
         case 3: // MinIP
             return minimum_intensity_projection(in, scn_frame, scn_node,
                                                 quality, (short)minValue, (short)maxValue,
                                                 uniforms.densityFloor, uniforms.densityCeil,
-                                                uniforms.useTFProj,
+                                                (uniforms.useTFProj != 0),
+                                                uniforms.gateHuMin, uniforms.gateHuMax, uniforms.useHuGate,
                                                 dicom, transferColor);
 
         case 4: // AIP (Mean)
             return average_intensity_projection(in, scn_frame, scn_node,
                                                 quality, (short)minValue, (short)maxValue,
                                                 uniforms.densityFloor, uniforms.densityCeil,
-                                                uniforms.useTFProj,
+                                                (uniforms.useTFProj != 0),
+                                                uniforms.gateHuMin, uniforms.gateHuMax, uniforms.useHuGate,
                                                 dicom, transferColor);
         default:
             // fallback para MIP
             return maximum_intensity_projection(in, scn_frame, scn_node,
                                                 quality, (short)minValue, (short)maxValue,
                                                 uniforms.densityFloor, uniforms.densityCeil,
-                                                uniforms.useTFProj,
+                                                (uniforms.useTFProj != 0),
+                                                uniforms.gateHuMin, uniforms.gateHuMax, uniforms.useHuGate,
                                                 dicom, transferColor);
     }
 }

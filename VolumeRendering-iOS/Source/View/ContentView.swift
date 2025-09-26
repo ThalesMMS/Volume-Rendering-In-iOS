@@ -7,13 +7,17 @@ struct ContentView: View {
     
     @State var showOption = true
     @StateObject var model = DrawOptionModel()
+    @State private var isInitialized = false
     
     var body: some View {
         ZStack(alignment: .topLeading) {
             SceneView(scnView: view)
                 .background(.gray)
                 .onAppear(perform: {
-                    SceneViewController.Instance.onAppear(view)
+                    if !isInitialized {
+                        SceneViewController.Instance.onAppear(view)
+                        isInitialized = true
+                    }
                 })
                
             HStack(alignment: .top) {
@@ -22,8 +26,12 @@ struct ContentView: View {
                 }
                 
                 if showOption {
-                    DrawOptionView(
-                        model: model).background(.clear)
+                    ScrollView(.vertical, showsIndicators: true) {
+                        DrawOptionView(model: model)
+                            .padding(.trailing, 8)
+                    }
+                    .frame(maxWidth: 420, maxHeight: 360, alignment: .topLeading)
+                    .background(.clear)
                 }
             }.padding(.vertical, 25)
         }
@@ -32,7 +40,7 @@ struct ContentView: View {
 
 class DrawOptionModel: ObservableObject {
     @Published var part = VolumeCubeMaterial.BodyPart.none
-    @Published var method = VolumeCubeMaterial.Method.dvr
+    @Published var method = SceneViewController.RenderMode.dvr
     @Published var preset = VolumeCubeMaterial.Preset.ct_arteries
     @Published var lightingOn: Bool = true
     @Published var step: Float = 512
@@ -43,6 +51,17 @@ class DrawOptionModel: ObservableObject {
     @Published var gateCeil:  Float = 1.0
     @Published var useTFProj: Bool  = false
     @Published var adaptiveOn: Bool  = true
+
+    // HU gate (projeções) e TF no MPR
+    @Published var huGateOn: Bool = false
+    @Published var huMinHU: Float = -900
+    @Published var huMaxHU: Float = -500
+    @Published var useTFMpr: Bool = true
+
+    // MPR básico
+    @Published var mprOn: Bool = false
+    @Published var mprBlend: MPRPlaneMaterial.BlendMode = .single
+    @Published var mprAxialSlice: Float = 0
 }
 
 struct DrawOptionView: View {
@@ -51,16 +70,14 @@ struct DrawOptionView: View {
     var body: some View {
         VStack (spacing: 10) {
             HStack {
-                Picker("Choose a method", selection: $model.method) {
-                    ForEach(VolumeCubeMaterial.Method.allCases, id: \.self) { part in
-                        Text(part.rawValue)
+                Picker("Choose a mode", selection: $model.method) {
+                    ForEach(SceneViewController.RenderMode.allCases, id: \.self) { mode in
+                        Text(mode.rawValue)
                     }
                 }
                 .pickerStyle(SegmentedPickerStyle())
                 .padding()
-                .onChange(of: model.method) {
-                    SceneViewController.Instance.setMethod(method: $0)
-                }
+                .onChange(of: model.method) { SceneViewController.Instance.setRenderMode($0) }
                 .foregroundColor(.orange)
                 .onAppear() {
                     UISegmentedControl.appearance().selectedSegmentTintColor = .blue
@@ -141,6 +158,54 @@ struct DrawOptionView: View {
                     .onChange(of: model.useTFProj) { SceneViewController.Instance.setUseTFOnProjections($0) }
             }.frame(height: 30)
 
+            HStack {
+                Toggle("TF no MPR", isOn: $model.useTFMpr)
+                    .onChange(of: model.useTFMpr) { SceneViewController.Instance.setMPRUseTF($0) }
+            }.frame(height: 30)
+
+            HStack {
+                Picker("MPR Blend", selection: $model.mprBlend) {
+                    ForEach(MPRPlaneMaterial.BlendMode.allCases, id: \.self) { mode in
+                        let title: String = {
+                            switch mode {
+                            case .single: return "single"
+                            case .mip:    return "mip"
+                            case .minip:  return "minip"
+                            case .mean:   return "avg"
+                            }
+                        }()
+                        Text(title).tag(mode)
+                    }
+                }
+                .pickerStyle(SegmentedPickerStyle())
+                .onChange(of: model.mprBlend) { SceneViewController.Instance.setMPRBlend($0) }
+            }.frame(height: 30)
+
+            HStack {
+                Toggle("Gate por HU (projeções)", isOn: $model.huGateOn)
+                    .onChange(of: model.huGateOn) { SceneViewController.Instance.setHuGate(enabled: $0) }
+            }.frame(height: 30)
+
+            VStack {
+                HStack {
+                    Text("HU Min").foregroundColor(.white)
+                    Slider(value: $model.huMinHU, in: -1200...3000, step: 1)
+                        .padding()
+                        .onChange(of: model.huMinHU) { _ in
+                            SceneViewController.Instance.setHuWindow(minHU: Int32(model.huMinHU), maxHU: Int32(model.huMaxHU))
+                        }
+                }.frame(height: 30)
+
+                HStack {
+                    Text("HU Max").foregroundColor(.white)
+                    Slider(value: $model.huMaxHU, in: -1200...3000, step: 1)
+                        .padding()
+                        .onChange(of: model.huMaxHU) { _ in
+                            SceneViewController.Instance.setHuWindow(minHU: Int32(model.huMinHU), maxHU: Int32(model.huMaxHU))
+                        }
+                }.frame(height: 30)
+            }
+
             VStack {
                 HStack {
                     Text("Gate Floor").foregroundColor(.white)
@@ -165,6 +230,16 @@ struct DrawOptionView: View {
                 Toggle("Adaptive steps (durante interação)", isOn: $model.adaptiveOn)
                     .onChange(of: model.adaptiveOn) { SceneViewController.Instance.setAdaptive($0) }
             }.frame(height: 30)
+
+            if model.method == .mpr {
+                HStack {
+                    Text("Axial Slice")
+                        .foregroundColor(.white)
+                    Slider(value: $model.mprAxialSlice, in: 0...1, step: 0.01)
+                        .padding()
+                        .onChange(of: model.mprAxialSlice) { SceneViewController.Instance.updateAxialSlice(normalizedValue: $0) }
+                }.frame(height: 30)
+            }
 
         }
     }

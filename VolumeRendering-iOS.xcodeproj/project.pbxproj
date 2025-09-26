@@ -10,6 +10,7 @@
 		12CB89792E86CF76009C2E22 /* mpr.metal in Sources */ = {isa = PBXBuildFile; fileRef = 12CB89772E86CF76009C2E22 /* mpr.metal */; };
 		12CB897A2E86CF76009C2E22 /* MPRPlaneMaterial.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12CB89782E86CF76009C2E22 /* MPRPlaneMaterial.swift */; };
 		12CB897B2E86CF76009C2E22 /* DICOMGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12CB89762E86CF76009C2E22 /* DICOMGeometry.swift */; };
+		12CB898D2E86D2A0009C2E22 /* SCNNode+Basis.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12CB898C2E86D2A0009C2E22 /* SCNNode+Basis.swift */; };
 		66072805284328D80028EE15 /* shared.metal in Sources */ = {isa = PBXBuildFile; fileRef = 66072804284328D80028EE15 /* shared.metal */; };
 		66072812284370AE0028EE15 /* chest.raw.zip in Resources */ = {isa = PBXBuildFile; fileRef = 66072810284370AE0028EE15 /* chest.raw.zip */; };
 		66072813284370AE0028EE15 /* head.raw.zip in Resources */ = {isa = PBXBuildFile; fileRef = 66072811284370AE0028EE15 /* head.raw.zip */; };
@@ -35,6 +36,7 @@
 		12CB89762E86CF76009C2E22 /* DICOMGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DICOMGeometry.swift; sourceTree = "<group>"; };
 		12CB89772E86CF76009C2E22 /* mpr.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = mpr.metal; sourceTree = "<group>"; };
 		12CB89782E86CF76009C2E22 /* MPRPlaneMaterial.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MPRPlaneMaterial.swift; sourceTree = "<group>"; };
+		12CB898C2E86D2A0009C2E22 /* SCNNode+Basis.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SCNNode+Basis.swift"; sourceTree = "<group>"; };
 		66072804284328D80028EE15 /* shared.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = shared.metal; sourceTree = "<group>"; };
 		66072810284370AE0028EE15 /* chest.raw.zip */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = chest.raw.zip; sourceTree = "<group>"; };
 		66072811284370AE0028EE15 /* head.raw.zip */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = head.raw.zip; sourceTree = "<group>"; };
@@ -83,6 +85,7 @@
 			children = (
 				9C8B3E7D279E96C500599C97 /* Type.swift */,
 				9CC39D52279F76000066FC1D /* Math.swift */,
+				12CB898C2E86D2A0009C2E22 /* SCNNode+Basis.swift */,
 			);
 			path = Helper;
 			sourceTree = "<group>";
@@ -271,6 +274,7 @@
 				12CB897A2E86CF76009C2E22 /* MPRPlaneMaterial.swift in Sources */,
 				12CB897B2E86CF76009C2E22 /* DICOMGeometry.swift in Sources */,
 				9C8B3E7E279E96C500599C97 /* Type.swift in Sources */,
+				12CB898D2E86D2A0009C2E22 /* SCNNode+Basis.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -409,8 +413,10 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"VolumeRendering-iOS/Preview Content\"";
+				DEVELOPMENT_TEAM = P4VGX44GD8;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.medical";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -422,7 +428,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.VolumeRendering-iOS2";
+				PRODUCT_BUNDLE_IDENTIFIER = com.VolumeRendering;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -438,8 +444,10 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"VolumeRendering-iOS/Preview Content\"";
+				DEVELOPMENT_TEAM = P4VGX44GD8;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.medical";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -451,7 +459,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.VolumeRendering-iOS2";
+				PRODUCT_BUNDLE_IDENTIFIER = com.VolumeRendering;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;

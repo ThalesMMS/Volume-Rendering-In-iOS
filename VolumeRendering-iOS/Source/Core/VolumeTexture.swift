@@ -36,7 +36,7 @@ class VolumeTextureFactory {
         dimension = int3(1, 1, 1)
     }
     
-    func generate(device: MTLDevice) -> MTLTexture
+    func generate(device: MTLDevice) -> MTLTexture?
     {
         // example data type specification
         // type: Int16
@@ -51,12 +51,25 @@ class VolumeTextureFactory {
             descriptor.width = 1
             descriptor.height = 1
             descriptor.depth = 1
-            return device.makeTexture(descriptor: descriptor)! // textura 1x1x1
-        }   
+            
+            // Unwrapping seguro para evitar crash
+            guard let texture = device.makeTexture(descriptor: descriptor) else {
+                print("🚨 ERRO: Falha ao criar a textura placeholder 1x1x1.")
+                return nil
+            }
+            return texture
+        } 
      
         let filename = part.rawValue
-        let url = Bundle.main.url(forResource: filename, withExtension: "raw.zip")!
-        let archive = Archive(url: url, accessMode: .read)!
+        guard let url = Bundle.main.url(forResource: filename, withExtension: "raw.zip") else {
+            print("🚨 Recurso não encontrado: \(filename).raw.zip. Verifique se o git lfs pull foi executado.")
+            return nil // Evita o crash
+        }
+        
+        guard let archive = Archive(url: url, accessMode: .read) else {
+            print("🚨 Não foi possível ler o arquivo zip: \(url.path). O arquivo pode ser um ponteiro do Git LFS.")
+            return nil // Evita o crash
+        }
         var data = Data()
         for entry in archive { // unzip data
             _ = try! archive.extract(entry) {
@@ -71,17 +84,21 @@ class VolumeTextureFactory {
         let bytesPerRow = MemoryLayout<Int16>.size * descriptor.width
         let bytesPerImage = bytesPerRow * descriptor.height
         
-        let texture = device.makeTexture(descriptor: descriptor)
-        texture?.replace(region: MTLRegionMake3D(0, 0, 0,
-                                                 descriptor.width,
-                                                 descriptor.height,
-                                                 descriptor.depth),
-                         mipmapLevel: 0,
-                         slice: 0,
-                         withBytes: (data as NSData).bytes,
-                         bytesPerRow: bytesPerRow,
-                         bytesPerImage: bytesPerImage)
+        guard let texture = device.makeTexture(descriptor: descriptor) else {
+             print("🚨 ERRO: Falha ao criar a textura 3D para a parte: \(part.rawValue)")
+             return nil
+         }
+
+        texture.replace(region: MTLRegionMake3D(0, 0, 0,
+                                                descriptor.width,
+                                                descriptor.height,
+                                                descriptor.depth),
+                        mipmapLevel: 0,
+                        slice: 0,
+                        withBytes: (data as NSData).bytes,
+                        bytesPerRow: bytesPerRow,
+                        bytesPerImage: bytesPerImage)
         
-        return texture!
+        return texture
     }
 }

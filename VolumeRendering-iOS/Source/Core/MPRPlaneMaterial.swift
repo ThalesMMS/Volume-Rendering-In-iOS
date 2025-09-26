@@ -33,12 +33,19 @@ final class MPRPlaneMaterial: SCNMaterial {
         var _pad2: Float = 0
         var planeY: float3 = float3(0,1,0)  // eixo v do plano (tamanho = altura em [0,1])
         var _pad3: Float = 0
+
+        // Opção: aplicar TF 1D ao valor do slab/fino
+        var useTFMpr: Int32 = 1
+        var _pad4: Int32 = 0
+        var _pad5: Int32 = 0
+        var _pad6: Int32 = 0
     }
 
     // MARK: - Estado
     private var uniforms = Uniforms()
-    private let uniformsKey = "uniforms"   // bate com [[ buffer(4) ]] no shader
-    private let dicomKey    = "dicom"      // bate com [[ texture(0) ]]
+    private let uniformsKey = "U"   // bate com [[ buffer(4) ]] no shader
+    private let dicomKey    = "volume"      // bate com [[ texture(0) ]]
+    private let tfKey       = "transferColor" // bate com [[ texture(3) ]]
 
     // Mantemos dimensão/resolução para conveniências (slice index -> coord normalizada).
     private(set) var dimension: int3 = int3(1,1,1)
@@ -78,12 +85,20 @@ final class MPRPlaneMaterial: SCNMaterial {
         setValue(prop, forKey: dicomKey)
     }
 
+    private func setTransferFunctionTexture(_ texture: MTLTexture) {
+        let prop = SCNMaterialProperty(contents: texture as Any)
+        setValue(prop, forKey: tfKey)
+    }
+
     // MARK: - API pública (integração)
     /// Injeta a textura 3D do volume e captura dimension/resolution
     func setPart(device: MTLDevice, part: VolumeCubeMaterial.BodyPart) {
         // Usamos a mesma fábrica do projeto para manter os dados consistentes.
         let factory = VolumeTextureFactory(part)
-        let tex = factory.generate(device: device)
+        guard let tex = factory.generate(device: device) else {
+            print("🚨 ERRO: Falha ao gerar a textura do volume para o MPR.")
+            return
+        }
         self.dimension = factory.dimension
         self.resolution = factory.resolution
         setDicomTexture(tex)
@@ -156,5 +171,15 @@ final class MPRPlaneMaterial: SCNMaterial {
         uniforms.planeX = axisU
         uniforms.planeY = axisV
         setUniforms(uniforms)
+    }
+
+    // MARK: - TF controls
+    func setUseTF(_ on: Bool) {
+        uniforms.useTFMpr = on ? 1 : 0
+        setUniforms(uniforms)
+    }
+
+    func setTransferFunction(_ texture: MTLTexture) {
+        setTransferFunctionTexture(texture)
     }
 }

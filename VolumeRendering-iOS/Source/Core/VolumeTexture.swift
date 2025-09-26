@@ -72,9 +72,19 @@ class VolumeTextureFactory {
         }
         var data = Data()
         for entry in archive { // unzip data
-            _ = try! archive.extract(entry) {
-                data.append($0)
+            do {
+                _ = try archive.extract(entry) {
+                    data.append($0)
+                }
+            } catch {
+                print("🚨 Falha ao extrair a entrada \(entry.path) do arquivo zip: \(url.path). Erro: \(error)")
+                return nil
             }
+        }
+
+        if data.isEmpty {
+            print("🚨 Extração concluída, mas nenhuma informação foi lida de \(url.path). Verifique se o arquivo contém dados válidos.")
+            return nil
         }
         
         descriptor.width = Int(dimension.x)

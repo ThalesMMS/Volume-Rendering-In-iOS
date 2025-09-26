@@ -53,12 +53,14 @@ class SceneViewController: NSObject {
         mat = VolumeCubeMaterial(device: device)
         mat.setPart(device: device, part: .none)
 
-        // Manter a inicialização da TF default, mas com verificação
-        if let url = Bundle.main.url(forResource: "ct_arteries", withExtension: "tf") {
-            let tf = TransferFunction.load(from: url)
-            mat.tf = tf  // Armazena a TF para uso posterior
-            if let tfTexture = tf.get(device: device) {
-                mat.setTransferFunctionTexture(tfTexture)
+        // SceneViewController.onAppear(...)
+        if let url = Bundle.main.url(forResource: "ct_arteries", withExtension: "tf"),
+        let tfTex = TransferFunction.load(from: url).get(device: device) {
+            mat.setTransferFunctionTexture(tfTex)
+        } else {
+            // fallback simples: usa a TransferFunction() vazia para gerar uma rampa default
+            if let tfFallback = TransferFunction().get(device: device) {
+                mat.setTransferFunctionTexture(tfFallback)
             }
         }
 
@@ -152,38 +154,27 @@ class SceneViewController: NSObject {
 
     // MARK: - Render mode (VR vs MPR)
     func setRenderMode(_ mode: RenderMode) {
-        // Validação crítica: impedir MPR sem dados
-        if mode == .mpr {
-            // Verificar se temos dados carregados
-            if mat.textureGenerator == nil || mat.textureGenerator.part == .none {
-                print("⚠️ MPR requer dados carregados. Selecione 'chest' ou 'head' primeiro.")
-                return  // Não mudar para MPR
-            }
-        }
         activeRenderMode = mode
-    
-        // Validação: não permitir MPR se não houver dados
-        if mode == .mpr && mat.textureGenerator.part == .none {
-            print("⚠️ MPR não disponível sem dados carregados")
-            return
-        }
-        
         let isMprActive = (mode == .mpr)
-        
-        mat.cullMode = isMprActive ? .back : .front
-        volume.isHidden = isMprActive      // ✅ esconde DVR quando MPR
-        mprNode?.isHidden = !isMprActive   // ✅ mostra o plano MPR
-        
-        // Garantir que o material está configurado
-        if volume.geometry?.materials.isEmpty ?? true {
-            volume.geometry?.materials = [mat]
-        }
-        
-        // cullMode só importa pro volume (VR), não pro MPR
-        if !isMprActive {
-            mat.cullMode = .front
+
+        // 1) NÃO esconda o 'volume' (senão o MPR some junto)
+        volume.isHidden = false
+
+        // 2) Deixe o volume “mudo” quando em MPR (sem atrapalhar)
+        if isMprActive {
+            mat.transparency = 0.0          // não desenha cor
+            mat.writesToDepthBuffer = false // não disputa profundidade
+        } else {
+            mat.transparency = 1.0
+            mat.writesToDepthBuffer = true
             mat.setMethod(method: mapToVRMethod(mode))
         }
+
+        // 3) Mostra/oculta o plano MPR
+        mprNode?.isHidden = !isMprActive
+
+        // 4) (já no código) cull para VR/MPR
+        mat.cullMode = isMprActive ? .back : .front
     }
 
     private func mapToVRMethod(_ mode: RenderMode) -> VolumeCubeMaterial.Method {

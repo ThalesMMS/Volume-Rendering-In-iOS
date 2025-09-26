@@ -62,6 +62,8 @@ class DrawOptionModel: ObservableObject {
     @Published var mprOn: Bool = false
     @Published var mprBlend: MPRPlaneMaterial.BlendMode = .single
     @Published var mprAxialSlice: Float = 0
+    enum MPRPlane: String, CaseIterable { case axial, coronal, sagittal }
+    @Published var mprPlane: MPRPlane = .axial
 }
 
 struct DrawOptionView: View {
@@ -232,15 +234,34 @@ struct DrawOptionView: View {
             }.frame(height: 30)
 
             if model.method == .mpr {
-                HStack {
-                    Text("Axial Slice")
-                        .foregroundColor(.white)
-                    Slider(value: $model.mprAxialSlice, in: 0...1, step: 0.01)
-                        .padding()
-                        .onChange(of: model.mprAxialSlice) { SceneViewController.Instance.updateAxialSlice(normalizedValue: $0) }
-                }.frame(height: 30)
-            }
+                VStack {
+                    HStack {
+                        Text("Axial Slice")
+                            .foregroundColor(.white)
+                        Slider(value: $model.mprAxialSlice, in: 0...1, step: 0.01)
+                            .padding()
+                            .onChange(of: model.mprAxialSlice) { SceneViewController.Instance.updateAxialSlice(normalizedValue: $0) }
+                    }.frame(height: 30)
 
+                    HStack {
+                        Text("MPR Plane")
+                            .foregroundColor(.white)
+                        Picker("Plano", selection: $model.mprPlane) {
+                            Text("axial").tag(DrawOptionModel.MPRPlane.axial)
+                            Text("coronal").tag(DrawOptionModel.MPRPlane.coronal)
+                            Text("sagittal").tag(DrawOptionModel.MPRPlane.sagittal)
+                        }
+                        .pickerStyle(SegmentedPickerStyle())
+                        .onChange(of: model.mprPlane) { plane in
+                            switch plane {
+                            case .axial:    SceneViewController.Instance.setMPRPlaneAxial(slice:  Int( (SceneViewController.Instance.mprDimZ-1)/2 ))
+                            case .coronal:  SceneViewController.Instance.setMPRPlaneCoronal(row:  Int( (SceneViewController.Instance.mprDimY-1)/2 ))
+                            case .sagittal: SceneViewController.Instance.setMPRPlaneSagittal(column:Int( (SceneViewController.Instance.mprDimX-1)/2 ))
+                            }
+                        }
+                    }.frame(height: 30)
+                }
+            }
         }
     }
 }
@@ -252,3 +273,4 @@ struct ContentView_Previews: PreviewProvider {
             .previewDevice("iPad Pro (11-inch) (3rd generation)")
     }
 }
+

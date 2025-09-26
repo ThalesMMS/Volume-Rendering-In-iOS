@@ -25,6 +25,8 @@ class SceneViewController: NSObject {
     // --- MPR ---
     private var mprNode: SCNNode?
     private var mprMat: MPRPlaneMaterial?
+    private var importedVolume: DicomImportResult?
+    private let dicomLoader = DicomVolumeLoader()
 
     private var activeRenderMode: RenderMode = .dvr
     private var adaptiveOn: Bool = true
@@ -166,27 +168,18 @@ class SceneViewController: NSObject {
     }
     
     func setPart(part: VolumeCubeMaterial.BodyPart) {
-        mat.setPart(device: device, part: part)
-        volume.scale = SCNVector3(mat.scale)
-        syncMPRTransformWithVolume()
-        mat.setShift(device: device, shift: 0)
-
-        // Só configurar MPR se tivermos dados reais
-        if part != .none {
-            mprMat?.setPart(device: device, part: part)
-            if let tf = mat.tf {
-                if let tfTexture = tf.get(device: device) {
-                    mprMat?.setTransferFunction(tfTexture)
-                }
+        if part == .dicom {
+            guard let imported = importedVolume else {
+                mat.setPart(device: device, part: .dicom)
+                postVolumeUpdate(usingMprPart: .dicom)
+                return
             }
-            if let dim = mprMat?.dimension {
-                let mid = Int(dim.z / 2)
-                mprMat?.setAxial(slice: mid)
-                mprMat?.setSlab(thicknessInVoxels: 0, axis: 2, steps: 1)
-            }
+            applyImportedDataset(imported.dataset)
+            return
         }
 
-        setRenderMode(activeRenderMode)
+        mat.setPart(device: device, part: part)
+        postVolumeUpdate(usingMprPart: part)
     }
     
     func setPreset(preset: VolumeCubeMaterial.Preset) {
@@ -213,6 +206,24 @@ class SceneViewController: NSObject {
         if let tf = mat.tf {
             if let tfTexture = tf.get(device: device) {
                 mprMat?.setTransferFunction(tfTexture)
+            }
+        }
+    }
+
+    func loadDicomSeries(from url: URL, completion: @escaping (Result<DicomImportResult, Error>) -> Void) {
+        DispatchQueue.global(qos: .userInitiated).async {
+            do {
+                let result = try self.dicomLoader.loadVolume(from: url)
+                DispatchQueue.main.async {
+                    self.importedVolume = result
+                    self.applyImportedDataset(result.dataset)
+                    self.setPart(part: .dicom)
+                    completion(.success(result))
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    completion(.failure(error))
+                }
             }
         }
     }
@@ -393,21 +404,42 @@ class SceneViewController: NSObject {
     }
 }
 
-// MARK: - Exposição mínima para o painel Tri‑Planar
-extension SceneViewController {
-    /// Textura 3D do volume atualmente carregado (compartilhável entre materiais MPR).
-    func currentVolumeTexture() -> MTLTexture? {
-        (mat.value(forKey: "dicom") as? SCNMaterialProperty)?.contents as? MTLTexture
+private extension SceneViewController {
+    func applyImportedDataset(_ dataset: VolumeDataset) {
+        #if DEBUG
+        print("[SceneViewController] Applying imported dataset dims=\(dataset.dimensions) spacing=\(dataset.spacing) range=\(dataset.intensityRange)")
+        #endif
+        mat.setDataset(device: device, dataset: dataset)
+        postVolumeUpdate(usingMprPart: .dicom, dataset: dataset)
     }
 
-    /// Textura 1D da Transfer Function usada no VR (reutilizada no MPR).
-    func currentTFTexture() -> MTLTexture? {
-        (mat.value(forKey: "transferColor") as? SCNMaterialProperty)?.contents as? MTLTexture
-    }
+    func postVolumeUpdate(usingMprPart part: VolumeCubeMaterial.BodyPart, dataset: VolumeDataset? = nil) {
+        volume.scale = SCNVector3(mat.scale)
+        syncMPRTransformWithVolume()
+        mat.setShift(device: device, shift: 0)
 
-    /// Dimensão (voxels) e resolução (mm/voxel) do dataset atual.
-    func currentDatasetMeta() -> (dimension: int3, resolution: float3)? {
-        if let d = mprMat?.dimension, let r = mprMat?.resolution { return (d, r) }
-        return nil
+        guard part != .none else {
+            setRenderMode(activeRenderMode)
+            return
+        }
+
+        if let dataset {
+            mprMat?.setDataset(device: device, dataset: dataset)
+        } else {
+            mprMat?.setPart(device: device, part: part)
+        }
+
+        if let tf = mat.tf, let tfTexture = tf.get(device: device) {
+            mprMat?.setTransferFunction(tfTexture)
+        }
+
+        if let dim = mprMat?.dimension {
+            let mid = Int(dim.z / 2)
+            mprMat?.setAxial(slice: mid)
+            mprMat?.setSlab(thicknessInVoxels: 0, axis: 2, steps: 1)
+        }
+
+        setRenderMode(activeRenderMode)
     }
 }
+

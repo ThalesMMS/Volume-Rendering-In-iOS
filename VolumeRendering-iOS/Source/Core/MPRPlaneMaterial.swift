@@ -50,6 +50,7 @@ final class MPRPlaneMaterial: SCNMaterial {
     // Mantemos dimensão/resolução para conveniências (slice index -> coord normalizada).
     private(set) var dimension: int3 = int3(1,1,1)
     private(set) var resolution: float3 = float3(1,1,1)
+    private var textureFactory: VolumeTextureFactory = VolumeTextureFactory(part: .none)
 
     /// Define dims e spacing diretamente (caminho MPR-only).
     func setDataset(dimension: int3, resolution: float3) {
@@ -101,15 +102,11 @@ final class MPRPlaneMaterial: SCNMaterial {
     // MARK: - API pública (integração)
     /// Injeta a textura 3D do volume e captura dimension/resolution
     func setPart(device: MTLDevice, part: VolumeCubeMaterial.BodyPart) {
-        // Usamos a mesma fábrica do projeto para manter os dados consistentes.
-        let factory = VolumeTextureFactory(part)
-        guard let tex = factory.generate(device: device) else {
-            print("🚨 ERRO: Falha ao gerar a textura do volume para o MPR.")
-            return
-        }
-        self.dimension = factory.dimension
-        self.resolution = factory.resolution
-        setVolumeTexture(tex)
+        apply(factory: VolumeTextureFactory(part: part), device: device)
+    }
+
+    func setDataset(device: MTLDevice, dataset: VolumeDataset) {
+        apply(factory: VolumeTextureFactory(dataset: dataset), device: device)
     }
 
     func setHU(min: Int32, max: Int32) {
@@ -189,5 +186,25 @@ final class MPRPlaneMaterial: SCNMaterial {
 
     func setTransferFunction(_ texture: MTLTexture) {
         setTransferFunctionTexture(texture)
+    }
+}
+
+private extension MPRPlaneMaterial {
+    func apply(factory: VolumeTextureFactory, device: MTLDevice) {
+        textureFactory = factory
+        guard let texture = factory.generate(device: device) else {
+            print("🚨 ERRO: Falha ao gerar textura 3D para MPR.")
+            return
+        }
+
+        dimension = factory.dimension
+        resolution = factory.resolution
+
+        let range = factory.dataset.intensityRange
+        uniforms.voxelMinValue = range.lowerBound
+        uniforms.voxelMaxValue = range.upperBound
+        setUniforms(uniforms)
+
+        setVolumeTexture(texture)
     }
 }

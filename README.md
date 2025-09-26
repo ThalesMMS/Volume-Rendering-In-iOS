@@ -30,6 +30,12 @@ Direct and projected volume rendering on iOS using SceneKit + Metal.
 2. Open the Xcode project `VolumeRendering-iOS.xcodeproj`.
 3. Select a device (prefer iPhone 15 Pro Max) and run.
 
+### DICOM via GDCM
+1. Build GDCM for iOS (static libs or an XCFramework). A simple path is to use CMake with the iOS toolchain or to reuse prebuilt binaries from your toolchain.
+2. Copy the resulting headers and libraries into `Vendor/GDCM/include` and `Vendor/GDCM/lib` respectively. The Xcode target already adds these locations to the header and library search paths.
+3. Add the required static libraries (for example `libgdcmCommon`, `libgdcmMSFF`, `libexpat`, `libz`, `libopenjp2`, `libcharls`) to **Link Binary With Libraries**. If you use an `.xcframework`, drop it in the folder and drag it into Xcode.
+4. Run the app, tap **Import DICOM**, and select a `.zip`, folder, or file representing a series. When GDCM is not linked, the importer gracefully reports that the native loader is unavailable.
+
 ### Screenshots
 
 |Surface Rendering|Direct Volume Rendering|Maximum Intensity Projection|

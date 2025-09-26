@@ -1,6 +1,7 @@
 import MetalKit
 import SceneKit
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct ContentView: View {
     var view = SCNView()
@@ -79,11 +80,28 @@ class DrawOptionModel: ObservableObject {
     @Published var mprAxialSlice: Float = 0
     enum MPRPlane: String, CaseIterable { case axial, coronal, sagittal }
     @Published var mprPlane: MPRPlane = .axial
+
+    @Published var importedVolumeName: String?
 }
 
 // === VIEW DO PAINEL (o seu, com 1 ajuste no trecho final do MPR) ===
 struct DrawOptionView: View {
     @ObservedObject var model: DrawOptionModel
+    @State private var showingImporter = false
+    @State private var isLoadingDicom = false
+    @State private var isShowingImportError = false
+    @State private var importErrorMessage = ""
+
+    private let dicomContentTypes: [UTType] = {
+        var types: [UTType] = [.folder, .data]
+        if let zip = UTType(filenameExtension: "zip") {
+            types.append(zip)
+        }
+        if let dicom = UTType(filenameExtension: "dcm") {
+            types.insert(dicom, at: 0)
+        }
+        return types
+    }()
     
     var body: some View {
         VStack (spacing: 10) {
@@ -107,7 +125,7 @@ struct DrawOptionView: View {
             HStack {
                 Picker("Choose a Part", selection: $model.part) {
                     ForEach(VolumeCubeMaterial.BodyPart.allCases, id: \.self) { part in
-                        Text(part.rawValue)
+                        Text(part.displayName)
                     }
                 }
                 .pickerStyle(SegmentedPickerStyle())
@@ -124,6 +142,30 @@ struct DrawOptionView: View {
                 }
             }.frame(height: 30)
             
+            HStack(spacing: 12) {
+                Button {
+                    showingImporter = true
+                } label: {
+                    Label("Import DICOM", systemImage: "tray.and.arrow.down")
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(isLoadingDicom)
+
+                if isLoadingDicom {
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle())
+                }
+            }
+            .padding(.horizontal)
+
+            if let seriesName = model.importedVolumeName {
+                Text("Loaded series: \(seriesName)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
+            Divider()
+
             HStack {
                 Picker("Choose a Preset", selection: $model.preset) {
                     ForEach(VolumeCubeMaterial.Preset.allCases, id: \.self) { part in
@@ -270,6 +312,69 @@ struct DrawOptionView: View {
                     .font(.footnote)
             }
         }
+        .fileImporter(isPresented: $showingImporter,
+                       allowedContentTypes: dicomContentTypes,
+                       allowsMultipleSelection: false) { result in
+            switch result {
+            case .success(let urls):
+                guard let url = urls.first else { return }
+                importDicom(from: url)
+            case .failure(let error):
+                importErrorMessage = error.localizedDescription
+                isShowingImportError = true
+            }
+        }
+        .alert("Import error", isPresented: $isShowingImportError, actions: {
+            Button("OK", role: .cancel) {}
+        }, message: {
+            Text(importErrorMessage)
+        })
+    }
+}
+
+private extension DrawOptionView {
+    func importDicom(from url: URL) {
+        let hasScope = url.startAccessingSecurityScopedResource()
+        isLoadingDicom = true
+
+        SceneViewController.Instance.loadDicomSeries(from: url) { result in
+            if hasScope {
+                url.stopAccessingSecurityScopedResource()
+            }
+            isLoadingDicom = false
+
+            switch result {
+            case .success(let importResult):
+                model.importedVolumeName = importResult.seriesDescription
+                model.part = .dicom
+                model.shift = 0
+            case .failure(let error):
+                importErrorMessage = friendlyMessage(for: error)
+                isShowingImportError = true
+            }
+        }
+    }
+
+    func friendlyMessage(for error: Error) -> String {
+        if let loaderError = error as? DicomVolumeLoaderError {
+            switch loaderError {
+            case .unsupportedBitDepth:
+                return "Apenas séries DICOM escalares de 16 bits são suportadas no momento."
+            case .securityScopeUnavailable:
+                return "Não foi possível acessar os arquivos selecionados."
+            case .missingResult:
+                return "A conversão da série DICOM não retornou dados."
+            case .bridgeError(let nsError):
+                return nsError.localizedDescription
+            }
+        }
+
+        let nsError = error as NSError
+        if nsError.domain == DICOMSeriesLoaderErrorDomain {
+            return nsError.localizedDescription
+        }
+
+        return error.localizedDescription
     }
 }
 

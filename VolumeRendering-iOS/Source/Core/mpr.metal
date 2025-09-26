@@ -79,7 +79,7 @@ fragment float4 mpr_fragment(VSOut in                                       [[st
     // Thick slab: percorre ao longo da normal do plano
     float3 N = normalize(cross(U.planeX, U.planeY));
     int steps = max(2, U.numSteps);
-    int half  = (steps - 1) / 2;
+    int halfSteps = (steps - 1) / 2;
     float stepN = (2.0f * U.slabHalf) / float(steps - 1);
 
     float vmax = 0.0f;
@@ -87,7 +87,7 @@ fragment float4 mpr_fragment(VSOut in                                       [[st
     float vacc = 0.0f;
     int   cnt  = 0;
 
-    for (int i = -half; i <= half; ++i) {
+    for (int i = -halfSteps; i <= halfSteps; ++i) {
         float3 Pi = Pw + float(i) * stepN * N;
         if (any(Pi < 0.0f) || any(Pi > 1.0f)) continue;
 
@@ -109,3 +109,4 @@ fragment float4 mpr_fragment(VSOut in                                       [[st
 
     return float4(val, val, val, 1);
 }
+

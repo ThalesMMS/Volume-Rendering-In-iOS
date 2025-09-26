@@ -56,7 +56,8 @@ final class MPRPlaneMaterial: SCNMaterial {
         isDoubleSided = true
         writesToDepthBuffer = false     // desenha por cima sem "brigar" com o volume
         readsFromDepthBuffer = false
-        cullMode = .none
+        // SceneKit doesn't have .none; use .back and render both sides via isDoubleSided
+        cullMode = .back
 
         // Uniform default
         setUniforms(uniforms)

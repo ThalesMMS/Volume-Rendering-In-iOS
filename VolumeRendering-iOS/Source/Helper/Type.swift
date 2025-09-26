@@ -29,3 +29,7 @@ extension Float: sizeable {}
 extension float2: sizeable {}
 extension float3: sizeable {}
 extension float4: sizeable {}
+
+extension SIMD4 where Scalar == Float {
+    var xyz: SIMD3<Float> { SIMD3(x, y, z) }
+}

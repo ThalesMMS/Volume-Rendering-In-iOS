@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		12CB89792E86CF76009C2E22 /* mpr.metal in Sources */ = {isa = PBXBuildFile; fileRef = 12CB89772E86CF76009C2E22 /* mpr.metal */; };
+		12CB897A2E86CF76009C2E22 /* MPRPlaneMaterial.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12CB89782E86CF76009C2E22 /* MPRPlaneMaterial.swift */; };
+		12CB897B2E86CF76009C2E22 /* DICOMGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12CB89762E86CF76009C2E22 /* DICOMGeometry.swift */; };
 		66072805284328D80028EE15 /* shared.metal in Sources */ = {isa = PBXBuildFile; fileRef = 66072804284328D80028EE15 /* shared.metal */; };
 		66072812284370AE0028EE15 /* chest.raw.zip in Resources */ = {isa = PBXBuildFile; fileRef = 66072810284370AE0028EE15 /* chest.raw.zip */; };
 		66072813284370AE0028EE15 /* head.raw.zip in Resources */ = {isa = PBXBuildFile; fileRef = 66072811284370AE0028EE15 /* head.raw.zip */; };
@@ -29,6 +32,9 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		12CB89762E86CF76009C2E22 /* DICOMGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DICOMGeometry.swift; sourceTree = "<group>"; };
+		12CB89772E86CF76009C2E22 /* mpr.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = mpr.metal; sourceTree = "<group>"; };
+		12CB89782E86CF76009C2E22 /* MPRPlaneMaterial.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MPRPlaneMaterial.swift; sourceTree = "<group>"; };
 		66072804284328D80028EE15 /* shared.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = shared.metal; sourceTree = "<group>"; };
 		66072810284370AE0028EE15 /* chest.raw.zip */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = chest.raw.zip; sourceTree = "<group>"; };
 		66072811284370AE0028EE15 /* head.raw.zip */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = head.raw.zip; sourceTree = "<group>"; };
@@ -95,6 +101,9 @@
 		66320B4728430A41005D3347 /* Core */ = {
 			isa = PBXGroup;
 			children = (
+				12CB89762E86CF76009C2E22 /* DICOMGeometry.swift */,
+				12CB89772E86CF76009C2E22 /* mpr.metal */,
+				12CB89782E86CF76009C2E22 /* MPRPlaneMaterial.swift */,
 				9C8B3E7B279E8C8100599C97 /* volumerendering.metal */,
 				66072804284328D80028EE15 /* shared.metal */,
 				66499F4B27A1887200F20AAB /* VolumeCubeMaterial.swift */,
@@ -198,7 +207,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1320;
-				LastUpgradeCheck = 1320;
+				LastUpgradeCheck = 2600;
 				TargetAttributes = {
 					9C8B3E65279E8AA600599C97 = {
 						CreatedOnToolsVersion = 13.2.1;
@@ -258,6 +267,9 @@
 				9C21FBCF27A0E904004CE254 /* VolumeTexture.swift in Sources */,
 				E395877B27A3C445003F54D1 /* TransferFunction.swift in Sources */,
 				9C21FBCD27A0D860004CE254 /* SceneView.swift in Sources */,
+				12CB89792E86CF76009C2E22 /* mpr.metal in Sources */,
+				12CB897A2E86CF76009C2E22 /* MPRPlaneMaterial.swift in Sources */,
+				12CB897B2E86CF76009C2E22 /* DICOMGeometry.swift in Sources */,
 				9C8B3E7E279E96C500599C97 /* Type.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -269,6 +281,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
@@ -300,8 +313,10 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = W97G28RHLW;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -321,6 +336,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -330,6 +346,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
@@ -361,8 +378,10 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = W97G28RHLW;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -375,6 +394,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				VALIDATE_PRODUCT = YES;
@@ -389,7 +409,6 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"VolumeRendering-iOS/Preview Content\"";
-				DEVELOPMENT_TEAM = W97G28RHLW;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -419,7 +438,6 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"VolumeRendering-iOS/Preview Content\"";
-				DEVELOPMENT_TEAM = W97G28RHLW;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;

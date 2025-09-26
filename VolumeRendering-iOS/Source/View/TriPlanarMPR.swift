@@ -2,7 +2,7 @@
 //  Isis DICOM Viewer
 //
 //  Tri‑Planar MPR com linhas ortogonais arrastáveis e rotação oblíqua
-//  - 3 viewports 2D (axial, coronal, sagital) com SCNView ortográfico
+//  - 3 viewports 2D (axial, coronal, sagittal) com SCNView ortográfico
 //  - Reutiliza a textura 3D e a TF já carregadas pelo VR
 //  - Linhas centrais arrastáveis movem os planos; rotação 2‑toques gira a triade
 //

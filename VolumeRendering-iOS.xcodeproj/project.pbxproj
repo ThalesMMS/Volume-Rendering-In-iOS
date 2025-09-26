@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		126AB2192E872A5500051910 /* AVKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 126AB2182E872A5500051910 /* AVKit.framework */; };
 		12CB89792E86CF76009C2E22 /* mpr.metal in Sources */ = {isa = PBXBuildFile; fileRef = 12CB89772E86CF76009C2E22 /* mpr.metal */; };
 		12CB897A2E86CF76009C2E22 /* MPRPlaneMaterial.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12CB89782E86CF76009C2E22 /* MPRPlaneMaterial.swift */; };
 		12CB897B2E86CF76009C2E22 /* DICOMGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12CB89762E86CF76009C2E22 /* DICOMGeometry.swift */; };
@@ -33,6 +34,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		126AB2182E872A5500051910 /* AVKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVKit.framework; path = System/Library/Frameworks/AVKit.framework; sourceTree = SDKROOT; };
 		12CB89762E86CF76009C2E22 /* DICOMGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DICOMGeometry.swift; sourceTree = "<group>"; };
 		12CB89772E86CF76009C2E22 /* mpr.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = mpr.metal; sourceTree = "<group>"; };
 		12CB89782E86CF76009C2E22 /* MPRPlaneMaterial.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MPRPlaneMaterial.swift; sourceTree = "<group>"; };
@@ -63,6 +65,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				126AB2192E872A5500051910 /* AVKit.framework in Frameworks */,
 				66072816284372540028EE15 /* ZIPFoundation in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -70,6 +73,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		126AB2172E872A5500051910 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				126AB2182E872A5500051910 /* AVKit.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		66320B4428430A1E005D3347 /* Source */ = {
 			isa = PBXGroup;
 			children = (
@@ -130,6 +141,7 @@
 			isa = PBXGroup;
 			children = (
 				9C8B3E68279E8AA600599C97 /* VolumeRendering-iOS */,
+				126AB2172E872A5500051910 /* Frameworks */,
 				9C8B3E67279E8AA600599C97 /* Products */,
 			);
 			sourceTree = "<group>";

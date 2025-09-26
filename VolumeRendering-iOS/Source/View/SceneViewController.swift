@@ -90,14 +90,26 @@ class SceneViewController: NSObject {
         // MPR: criar mas não configurar ainda
         let plane = SCNPlane(width: 1, height: 1)
         let mpr = MPRPlaneMaterial(device: device)
-        // NÃO chamar setPart aqui - deixar para quando houver dados reais
-        
+        mpr.setPart(device: device, part: .none) // <-- placeholder 3D válido
+        if let preset = VolumeCubeMaterial.Preset.allCases.first,
+        let url = Bundle.main.url(forResource: preset.rawValue, withExtension: "tf") {
+            let tf = TransferFunction.load(from: url)
+            if let tfTexture = tf.get(device: device) {
+                mpr.setTransferFunction(tfTexture)
+            }
+        }
         let node = SCNNode(geometry: plane)
         node.geometry?.materials = [mpr]
         node.isHidden = true
-        volume.addChildNode(node)
+        root.addChildNode(node)
+        node.simdTransform = volume.simdTransform // mantém o mesmo frame do volume
         self.mprNode = node
         self.mprMat = mpr
+    }
+
+    private func syncMPRTransformWithVolume() {
+        guard let mprNode = mprNode else { return }
+        mprNode.simdTransform = volume.simdTransform
     }
     
     func setMethod(method: VolumeCubeMaterial.Method) {
@@ -107,6 +119,7 @@ class SceneViewController: NSObject {
     func setPart(part: VolumeCubeMaterial.BodyPart) {
         mat.setPart(device: device, part: part)
         volume.scale = SCNVector3(mat.scale)
+        syncMPRTransformWithVolume()
         mat.setShift(device: device, shift: 0)
 
         // Só configurar MPR se tivermos dados reais
@@ -158,18 +171,15 @@ class SceneViewController: NSObject {
     // MARK: - Render mode (VR vs MPR)
     func setRenderMode(_ mode: RenderMode) {
         activeRenderMode = mode
-        let isMprActive = (mode == .mpr)
-
-        // Mostre só o que interessa
-        volume.isHidden  = isMprActive       // DVR fora quando MPR está ativo
-        mprNode?.isHidden = !isMprActive     // plano MPR visível
-
-        if !isMprActive {
+        let isMpr = (mode == .mpr)
+        volume.isHidden = isMpr
+        mprNode?.isHidden = !isMpr
+        if !isMpr {
             mat.cullMode = .front
             mat.setMethod(method: mapToVRMethod(mode))
         }
-
     }
+
 
     private func mapToVRMethod(_ mode: RenderMode) -> VolumeCubeMaterial.Method {
         switch mode {

@@ -37,6 +37,12 @@ class DrawOptionModel: ObservableObject {
     @Published var lightingOn: Bool = true
     @Published var step: Float = 512
     @Published var shift: Float = 0
+
+    // NOVO:
+    @Published var gateFloor: Float = 0.02
+    @Published var gateCeil:  Float = 1.0
+    @Published var useTFProj: Bool  = false
+    @Published var adaptiveOn: Bool  = true
 }
 
 struct DrawOptionView: View {
@@ -129,6 +135,37 @@ struct DrawOptionView: View {
             }.frame(height: 30)
             
             Spacer()
+
+            HStack {
+                Toggle("TF nas projeções (MIP/MinIP/AIP)", isOn: $model.useTFProj)
+                    .onChange(of: model.useTFProj) { SceneViewController.Instance.setUseTFOnProjections($0) }
+            }.frame(height: 30)
+
+            VStack {
+                HStack {
+                    Text("Gate Floor").foregroundColor(.white)
+                    Slider(value: $model.gateFloor, in: 0...1, step: 0.01)
+                        .padding()
+                        .onChange(of: model.gateFloor) { _ in
+                            SceneViewController.Instance.setDensityGate(floor: model.gateFloor, ceil: model.gateCeil)
+                        }
+                }.frame(height: 30)
+
+                HStack {
+                    Text("Gate Ceil").foregroundColor(.white)
+                    Slider(value: $model.gateCeil, in: 0...1, step: 0.01)
+                        .padding()
+                        .onChange(of: model.gateCeil) { _ in
+                            SceneViewController.Instance.setDensityGate(floor: model.gateFloor, ceil: model.gateCeil)
+                        }
+                }.frame(height: 30)
+            }
+
+            HStack {
+                Toggle("Adaptive steps (durante interação)", isOn: $model.adaptiveOn)
+                    .onChange(of: model.adaptiveOn) { SceneViewController.Instance.setAdaptive($0) }
+            }.frame(height: 30)
+
         }
     }
 }

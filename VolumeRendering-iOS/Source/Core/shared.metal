@@ -124,31 +124,24 @@ public:
     };
     
     static float3 calGradient(texture3d<short, access::sample> volume,
-                              float3 coord)
+                          float3 coord,
+                          float3 dimension)
     {
-        float3 dimension = float3(512, 512, 511); // TODO: Parameter로 받도록
-        if(dimension.x < 1.0 || dimension.y < 1.0 || dimension.z < 1.0)
-        { return float3(0); }
-        
-        float x1 = volume.sample(sampler3d, float3(min(coord.x + 1.0 / dimension.x, 1.0),
-                                                coord.y,
-                                                coord.z)).r;
-        float x2 = volume.sample(sampler3d, float3(max(coord.x - 1.0 / dimension.x, 0.0),
-                                                coord.y,
-                                                coord.z)).r;
-        float y1 = volume.sample(sampler3d, float3(coord.x,
-                                                min(coord.y + 1.0 / dimension.y, 1.0),
-                                                coord.z)).r;
-        float y2 = volume.sample(sampler3d, float3(coord.x,
-                                                max(coord.y - 1.0 / dimension.y, 0.0),
-                                                coord.z)).r;
-        float z1 = volume.sample(sampler3d, float3(coord.x,
-                                                coord.y,
-                                                min(coord.z + 1.0 / dimension.z, 1.0))).r;
-        float z2 = volume.sample(sampler3d, float3(coord.x,
-                                                coord.y,
-                                                max(coord.z - 1.0 / dimension.z, 0.0))).r;
-                                 
+        if (dimension.x < 1.0 || dimension.y < 1.0 || dimension.z < 1.0) {
+            return float3(0);
+        }
+
+        float3 invDim = 1.0 / dimension;
+
+        float x1 = volume.sample(sampler3d, float3(min(coord.x + invDim.x, 1.0), coord.y, coord.z)).r;
+        float x2 = volume.sample(sampler3d, float3(max(coord.x - invDim.x, 0.0), coord.y, coord.z)).r;
+
+        float y1 = volume.sample(sampler3d, float3(coord.x, min(coord.y + invDim.y, 1.0), coord.z)).r;
+        float y2 = volume.sample(sampler3d, float3(coord.x, max(coord.y - invDim.y, 0.0), coord.z)).r;
+
+        float z1 = volume.sample(sampler3d, float3(coord.x, coord.y, min(coord.z + invDim.z, 1.0))).r;
+        float z2 = volume.sample(sampler3d, float3(coord.x, coord.y, max(coord.z - invDim.z, 0.0))).r;
+
         return float3(x2 - x1, y2 - y1, z2 - z1);
     }
 

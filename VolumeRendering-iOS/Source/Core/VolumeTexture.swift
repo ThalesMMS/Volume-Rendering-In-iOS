@@ -47,8 +47,13 @@ class VolumeTextureFactory {
         descriptor.pixelFormat = .r16Sint
         descriptor.usage = .shaderRead
         
-        if part == .none { return device.makeTexture(descriptor: descriptor)! }
-        
+        if part == .none {
+            descriptor.width = 1
+            descriptor.height = 1
+            descriptor.depth = 1
+            return device.makeTexture(descriptor: descriptor)! // textura 1x1x1
+        }   
+     
         let filename = part.rawValue
         let url = Bundle.main.url(forResource: filename, withExtension: "raw.zip")!
         let archive = Archive(url: url, accessMode: .read)!

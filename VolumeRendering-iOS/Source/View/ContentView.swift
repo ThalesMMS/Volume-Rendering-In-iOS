@@ -12,15 +12,27 @@ struct ContentView: View {
     
     var body: some View {
         ZStack(alignment: .topLeading) {
-            SceneView(scnView: view)
-                .background(.gray)
-                .onAppear(perform: {
-                    if !isInitialized {
-                        SceneViewController.Instance.onAppear(view)
-                        isInitialized = true
-                    }
-                })
+            // === VR 3D ou Tri‑Planar MPR (3 painéis) ===
+            Group {
+                if model.method == .mpr {
+                    // Painel Tri‑Planar
+                    TriPlanarMPRView()
+                        .environmentObject(model)
+                } else {
+                    // Pipeline 3D original
+                    SceneView(scnView: view)
+                }
+            }
+            .background(.gray)
+            .onAppear {
+                if !isInitialized {
+                    // Inicializa device/texturas no controller principal (mesmo que o Tri‑Planar esteja ativo)
+                    SceneViewController.Instance.onAppear(view)
+                    isInitialized = true
+                }
+            }
                
+            // === Painel de opções (o seu, intacto) ===
             HStack(alignment: .top) {
                 Button(showOption ? "hide" : "show") {
                     showOption.toggle()
@@ -34,11 +46,13 @@ struct ContentView: View {
                     .frame(maxWidth: 420, maxHeight: 360, alignment: .topLeading)
                     .background(.clear)
                 }
-            }.padding(.vertical, 25)
+            }
+            .padding(.vertical, 25)
         }
     }
 }
 
+// === MODELO (o seu, sem mudanças) ===
 class DrawOptionModel: ObservableObject {
     @Published var part = VolumeCubeMaterial.BodyPart.none
     @Published var method = SceneViewController.RenderMode.dvr
@@ -59,7 +73,8 @@ class DrawOptionModel: ObservableObject {
     @Published var huMaxHU: Float = -500
     @Published var useTFMpr: Bool = true
 
-    // MPR básico
+    // MPR básico (os dois abaixo não são mais necessários para o tri‑planar,
+    // mas mantive para compatibilidade com seu SceneViewController)
     @Published var mprOn: Bool = false
     @Published var mprBlend: MPRPlaneMaterial.BlendMode = .single
     @Published var mprAxialSlice: Float = 0
@@ -69,6 +84,7 @@ class DrawOptionModel: ObservableObject {
     @Published var importedVolumeName: String?
 }
 
+// === VIEW DO PAINEL (o seu, com 1 ajuste no trecho final do MPR) ===
 struct DrawOptionView: View {
     @ObservedObject var model: DrawOptionModel
     @State private var showingImporter = false
@@ -204,6 +220,7 @@ struct DrawOptionView: View {
 
             HStack {
                 Toggle("TF no MPR", isOn: $model.useTFMpr)
+                    // O Tri‑Planar observa esta flag e aplica em todos os 3 painéis
                     .onChange(of: model.useTFMpr) { SceneViewController.Instance.setMPRUseTF($0) }
             }.frame(height: 30)
 
@@ -222,6 +239,7 @@ struct DrawOptionView: View {
                     }
                 }
                 .pickerStyle(SegmentedPickerStyle())
+                // O Tri‑Planar observa esta seleção e replica nos 3 painéis
                 .onChange(of: model.mprBlend) { SceneViewController.Instance.setMPRBlend($0) }
             }.frame(height: 30)
 
@@ -287,36 +305,11 @@ struct DrawOptionView: View {
                     .onChange(of: model.adaptiveOn) { SceneViewController.Instance.setAdaptive($0) }
             }.frame(height: 30)
 
+            // === Em MPR, o controle de navegação é pelas linhas; removi o slider de fatia ===
             if model.method == .mpr {
-                // Picker do plano
-                HStack {
-                    Picker("Plano MPR", selection: $model.mprPlane) {
-                        ForEach(DrawOptionModel.MPRPlane.allCases, id: \.self) {
-                            Text($0.rawValue)
-                        }
-                    }
-                    .pickerStyle(SegmentedPickerStyle())
-                    .onChange(of: model.mprPlane) { SceneViewController.Instance.setMPRPlane($0) }
-                }.frame(height: 30)
-
-                // Slider da fatia (dinâmico por plano)
-                HStack {
-                    Text("\(model.mprPlane.rawValue.capitalized) Slice").foregroundColor(.white)
-                    Slider(
-                        value: Binding(
-                            get: { Double(model.mprAxialSlice) },
-                            set: { model.mprAxialSlice = Float($0) }
-                        ),
-                        in: 0.0...1.0,
-                        step: {
-                            let n = max(1, SceneViewController.Instance.mprDimCurrent)
-                            return n > 1 ? 1.0 / Double(n - 1) : 0.01
-                        }()
-                    )
-                    .padding()
-                    .onChange(of: model.mprAxialSlice) { SceneViewController.Instance.updateSlice(normalizedValue: $0) }
-                }
-                .frame(height: 30)
+                Text("Tri‑Planar active: drag the lines in the 3 panels to navigate; use 2-finger rotation for oblique MPR.")
+                    .foregroundColor(.white)
+                    .font(.footnote)
             }
         }
         .fileImporter(isPresented: $showingImporter,

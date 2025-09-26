@@ -34,10 +34,9 @@ final class VolumeCubeMaterial: SCNMaterial {
     // MARK: - Uniforms (deve casar com struct Uniforms em volumerendering.metal)
 
     struct Uniforms: sizeable {
-        // Mantendo Bool aqui (funciona bem em iOS). Se algum device reclamar de alinhamento,
-        // troque para Int32 e adapte o .metal.
-        var isLightingOn: Bool = true
-        var isBackwardOn: Bool = false
+        // Flags como Int32 para alinhamento/portabilidade Swift/MSL
+        var isLightingOn: Int32 = 1
+        var isBackwardOn: Int32 = 0
 
         var method: Int32 = Method.dvr.idInt32
         var renderingQuality: Int32 = 512
@@ -46,10 +45,14 @@ final class VolumeCubeMaterial: SCNMaterial {
         var voxelMinValue: Int32 = -1024
         var voxelMaxValue: Int32 =  3071
 
-        // --- NOVOS CAMPOS ---
-        // Gating para projeções (MIP/MinIP/AIP), em [0,1] após normalização HU.
+        // Gating para projeções (MIP/MinIP/AIP)
         var densityFloor: Float = 0.02
         var densityCeil:  Float = 1.00
+
+        // Gating por HU nativo (quando habilitado)
+        var gateHuMin: Int32 = -900
+        var gateHuMax: Int32 = -500
+        var useHuGate: Int32 = 0
 
         // Dimensão real do volume (passada ao shader p/ gradiente correto)
         var dimX: Int32 = 1
@@ -57,7 +60,7 @@ final class VolumeCubeMaterial: SCNMaterial {
         var dimZ: Int32 = 1
 
         // Aplicar TF nas projeções?
-        var useTFProj: Bool = false
+        var useTFProj: Int32 = 0
 
         // Padding para múltiplos de 16B (evita surpresas de alinhamento)
         var _pad0: Int32 = 0
@@ -88,19 +91,21 @@ final class VolumeCubeMaterial: SCNMaterial {
         program.fragmentFunctionName = "volume_fragment"
         self.program = program
 
-        // Inicializa sem dados até que o caller selecione a série
+        // Flags de material primeiro
+        cullMode = .front
+        writesToDepthBuffer = true
+
+        // Inicializa sem dados
         setPart(device: device, part: .none)
 
-        // TF default (pode trocar em runtime)
-        setPreset(device: device, preset: .ct_arteries)
-        setShift(device: device, shift: 0)
+        // TF default com verificação - REMOVER este bloco problemático
+        // if Bundle.main.url(forResource: "ct_arteries", withExtension: "tf") != nil {
+        //     setPreset(device: device, preset: .ct_arteries)
+        //     setShift(device: device, shift: 0)
+        // }
 
         // Empurra uniforms iniciais
         pushUniforms()
-
-        // Flags de material
-        cullMode = .front
-        writesToDepthBuffer = true
     }
 
     @available(*, unavailable)
@@ -121,7 +126,7 @@ final class VolumeCubeMaterial: SCNMaterial {
         setValue(prop, forKey: dicomKey)
     }
 
-    private func setTransferFunctionTexture(_ texture: MTLTexture) {
+    func setTransferFunctionTexture(_ texture: MTLTexture) {
         let prop = SCNMaterialProperty(contents: texture as Any)
         setValue(prop, forKey: tfKey)
     }
@@ -136,8 +141,9 @@ final class VolumeCubeMaterial: SCNMaterial {
     /// Injeta o volume e atualiza dimX/Y/Z (para gradiente correto no shader).
     func setPart(device: MTLDevice, part: BodyPart) {
         textureGenerator = VolumeTextureFactory(part)
-        let volumeTex = textureGenerator.generate(device: device)
-        setDicomTexture(volumeTex)
+        if let volumeTex = textureGenerator.generate(device: device) { // Unwrapping seguro
+            setDicomTexture(volumeTex)
+        }
 
         // Dimensões reais para o cálculo de gradiente no shader
         uniforms.dimX = textureGenerator.dimension.x
@@ -147,12 +153,24 @@ final class VolumeCubeMaterial: SCNMaterial {
     }
 
     func setPreset(device: MTLDevice, preset: Preset) {
-        let url = Bundle.main.url(forResource: preset.rawValue, withExtension: "tf")!
+        print("🔍 Tentando carregar preset: \(preset.rawValue)")
+
+        guard let url = Bundle.main.url(forResource: preset.rawValue, withExtension: "tf") else {
+            print("🚨 ERRO: Arquivo não encontrado: \(preset.rawValue).tf")
+            print("🔍 Recursos disponíveis no bundle:")
+            print("🚨 ERRO: Não foi possível encontrar o recurso \(preset.rawValue).tf")
+            if let urls = Bundle.main.urls(forResourcesWithExtension: "tf", subdirectory: nil) {
+                urls.forEach { print("  - \($0.lastPathComponent)") }
+            }
+            return
+        }
+
+        print("✅ Arquivo encontrado: \(url.path)")
         tf = TransferFunction.load(from: url)
     }
 
     func setLighting(on: Bool) {
-        uniforms.isLightingOn = on
+        uniforms.isLightingOn = on ? 1 : 0
         pushUniforms()
     }
 
@@ -165,8 +183,9 @@ final class VolumeCubeMaterial: SCNMaterial {
     func setShift(device: MTLDevice, shift: Float) {
         tf?.shift = shift
         guard let tf = tf else { return }
-        let tfTexture = tf.get(device: device)
-        setTransferFunctionTexture(tfTexture)
+        if let tfTexture = tf.get(device: device) { // Unwrapping seguro
+            setTransferFunctionTexture(tfTexture)
+        }
     }
 
     /// Gating para MIP/MinIP/AIP em [0,1] (após normalização HU).
@@ -178,7 +197,20 @@ final class VolumeCubeMaterial: SCNMaterial {
 
     /// Aplica TF nas projeções (em vez de grayscale).
     func setUseTFOnProjections(_ on: Bool) {
-        uniforms.useTFProj = on
+        uniforms.useTFProj = on ? 1 : 0
         pushUniforms()
     }
+
+    // MARK: - HU Gate controls (projections)
+    func setHuGate(enabled: Bool) {
+        uniforms.useHuGate = enabled ? 1 : 0
+        pushUniforms()
+    }
+
+    func setHuWindow(minHU: Int32, maxHU: Int32) {
+        uniforms.gateHuMin = minHU
+        uniforms.gateHuMax = maxHU
+        pushUniforms()
+    }
+
 }

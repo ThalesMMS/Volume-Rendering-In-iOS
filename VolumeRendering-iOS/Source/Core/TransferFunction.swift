@@ -13,13 +13,21 @@ struct TransferFunction: Codable
     var max: Float = 3071
     var shift: Float = 0
     
-    static func load(from: URL) -> TransferFunction
-    {
-        let data = try! Data(contentsOf: from)
-        return try! JSONDecoder().decode(TransferFunction.self, from: data)
+    static func load(from: URL) -> TransferFunction {
+        print("🔍 Tentando carregar TF de: \(from.path)")
+        guard let data = try? Data(contentsOf: from) else {
+            print("🚨 ERRO: Não foi possível ler dados de: \(from.path)")
+            return TransferFunction()
+        }
+        guard let tf = try? JSONDecoder().decode(TransferFunction.self, from: data) else {
+            print("🚨 ERRO: Não foi possível decodificar JSON de: \(from.path)")
+            return TransferFunction()
+        }
+        print("✅ TF carregada com sucesso: \(tf.name)")
+        return tf
     }
     
-    func get(device: MTLDevice) -> MTLTexture
+    func get(device: MTLDevice) -> MTLTexture?
     {
         let TEXTURE_WIDTH = 512
         let TEXTURE_HEIGHT = 2
@@ -94,15 +102,19 @@ struct TransferFunction: Codable
         textureDescriptor.height = TEXTURE_HEIGHT
         textureDescriptor.usage = .shaderRead
         
-        let texture = device.makeTexture(descriptor: textureDescriptor)
-        texture?.replace(region: MTLRegionMake2D(0, 0, TEXTURE_WIDTH, TEXTURE_HEIGHT),
-                         mipmapLevel: 0,
-                         slice: 0,
-                         withBytes: tfCols,
-                         bytesPerRow: RGBAColor.size * TEXTURE_WIDTH,
-                         bytesPerImage: TEXTURE_WIDTH * TEXTURE_HEIGHT * RGBAColor.size)
+        guard let texture = device.makeTexture(descriptor: textureDescriptor) else {
+            print("🚨 ERRO: Falha ao criar a textura da Transfer Function.")
+            return nil // Retorna nil em vez de crashar
+        }
         
-        return texture!
+        texture.replace(region: MTLRegionMake2D(0, 0, TEXTURE_WIDTH, TEXTURE_HEIGHT),
+                        mipmapLevel: 0,
+                        slice: 0,
+                        withBytes: tfCols,
+                        bytesPerRow: RGBAColor.size * TEXTURE_WIDTH,
+                        bytesPerImage: TEXTURE_WIDTH * TEXTURE_HEIGHT * RGBAColor.size)
+        
+        return texture // Retorna a textura criada
     }
     
     func normalize(_ value: Float) -> Float

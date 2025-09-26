@@ -28,6 +28,8 @@ struct MPRUniforms {
     float  _pad2;
     float3 planeY;       // eixo V do plano (tamanho = altura em [0,1])
     float  _pad3;
+    int   useTFMpr;      // 0=grayscale, 1=usar TF 1D
+    int   _pad4; int _pad5; int _pad6;
 };
 
 struct VertexIn {
@@ -60,7 +62,8 @@ fragment float4 mpr_fragment(VSOut in                                       [[st
                              constant SCNSceneBuffer& scnFrame               [[buffer(0)]],
                              constant NodeBuffer& scnNode                    [[buffer(1)]],
                              constant MPRUniforms& U                         [[buffer(4)]],
-                             texture3d<short, access::sample> volume         [[texture(0)]]) {
+                             texture3d<short, access::sample> volume         [[texture(0)]],
+                             texture2d<float, access::sample> transferColor  [[texture(3)]]) {
 
     // Coord do plano no volume (normalizada)
     float3 Pw = U.planeOrigin + in.uv.x * U.planeX + in.uv.y * U.planeY;
@@ -73,7 +76,7 @@ fragment float4 mpr_fragment(VSOut in                                       [[st
     if (U.numSteps <= 1 || U.slabHalf <= 0.0f || U.blendMode == 0) {
         // MPR fino (uma amostra) OU modo single
         float d = sampleDensity01(volume, Pw, (short)U.voxelMinValue, (short)U.voxelMaxValue);
-        return float4(d, d, d, 1);
+        return (U.useTFMpr != 0) ? VR::getTfColour(transferColor, d) : float4(d, d, d, 1);
     }
 
     // Thick slab: percorre ao longo da normal do plano
@@ -107,6 +110,14 @@ fragment float4 mpr_fragment(VSOut in                                       [[st
             val = sampleDensity01(volume, Pw, (short)U.voxelMinValue, (short)U.voxelMaxValue);
     }
 
-    return float4(val, val, val, 1);
+    if (U.useTFMpr != 0) {
+        float4 tfColor = VR::getTfColour(transferColor, val);
+        if (length(tfColor.rgb) < 0.001) {
+            return float4(val, val, val, 1);
+        }
+        return tfColor;
+    } else {
+        return float4(val, val, val, 1);
+    }
 }
 

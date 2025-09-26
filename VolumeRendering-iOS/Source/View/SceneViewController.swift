@@ -34,6 +34,7 @@ class SceneViewController: NSObject {
     private var mprAxNode: SCNNode?
     private var mprCoNode: SCNNode?
     private var mprSaNode: SCNNode?
+
     
     override public init() { super.init() }
 
@@ -389,5 +390,24 @@ class SceneViewController: NSObject {
         if axis == 0 { mpr.setSagittal(column:Int((mpr.dimension.x)/2)) }
 
         return node
+    }
+}
+
+// MARK: - Exposição mínima para o painel Tri‑Planar
+extension SceneViewController {
+    /// Textura 3D do volume atualmente carregado (compartilhável entre materiais MPR).
+    func currentVolumeTexture() -> MTLTexture? {
+        (mat.value(forKey: "dicom") as? SCNMaterialProperty)?.contents as? MTLTexture
+    }
+
+    /// Textura 1D da Transfer Function usada no VR (reutilizada no MPR).
+    func currentTFTexture() -> MTLTexture? {
+        (mat.value(forKey: "transferColor") as? SCNMaterialProperty)?.contents as? MTLTexture
+    }
+
+    /// Dimensão (voxels) e resolução (mm/voxel) do dataset atual.
+    func currentDatasetMeta() -> (dimension: int3, resolution: float3)? {
+        if let d = mprMat?.dimension, let r = mprMat?.resolution { return (d, r) }
+        return nil
     }
 }

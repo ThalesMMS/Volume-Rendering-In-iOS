@@ -27,8 +27,20 @@ final class VolumeCubeMaterial: SCNMaterial {
     }
 
     enum BodyPart: String, CaseIterable, Identifiable {
+        case none, chest, head, dicom
+
         var id: RawValue { rawValue }
-        case none, chest, head
+
+        var displayName: String {
+            switch self {
+            case .none:
+                return "none"
+            case .dicom:
+                return "DICOM"
+            default:
+                return rawValue
+            }
+        }
     }
 
     // MARK: - Uniforms (deve casar com struct Uniforms em volumerendering.metal)
@@ -75,7 +87,7 @@ final class VolumeCubeMaterial: SCNMaterial {
     private let dicomKey       = "dicom"          // [[ texture(0) ]]
     private let tfKey          = "transferColor"  // [[ texture(3) ]]
 
-    var textureGenerator: VolumeTextureFactory!
+    private(set) var textureGenerator: VolumeTextureFactory = VolumeTextureFactory(part: .none)
     var tf: TransferFunction?
 
     /// Escala do cubo (SceneKit) = voxel spacing * dimensão (mantém proporção anatômica)
@@ -141,16 +153,11 @@ final class VolumeCubeMaterial: SCNMaterial {
 
     /// Injeta o volume e atualiza dimX/Y/Z (para gradiente correto no shader).
     func setPart(device: MTLDevice, part: BodyPart) {
-        textureGenerator = VolumeTextureFactory(part)
-        if let volumeTex = textureGenerator.generate(device: device) { // Unwrapping seguro
-            setDicomTexture(volumeTex)
-        }
+        apply(factory: VolumeTextureFactory(part: part), device: device)
+    }
 
-        // Dimensões reais para o cálculo de gradiente no shader
-        uniforms.dimX = textureGenerator.dimension.x
-        uniforms.dimY = textureGenerator.dimension.y
-        uniforms.dimZ = textureGenerator.dimension.z
-        pushUniforms()
+    func setDataset(device: MTLDevice, dataset: VolumeDataset) {
+        apply(factory: VolumeTextureFactory(dataset: dataset), device: device)
     }
 
     func setPreset(device: MTLDevice, preset: Preset) {
@@ -214,4 +221,30 @@ final class VolumeCubeMaterial: SCNMaterial {
         pushUniforms()
     }
 
+}
+
+private extension VolumeCubeMaterial {
+    func apply(factory: VolumeTextureFactory, device: MTLDevice) {
+        textureGenerator = factory
+        guard let texture = factory.generate(device: device) else {
+            print("🚨 ERRO: Falha ao gerar textura para o volume.")
+            return
+        }
+        setDicomTexture(texture)
+
+        #if DEBUG
+        print("[VolumeCubeMaterial] dataset dim=\(factory.dimension) range=\(factory.dataset.intensityRange)")
+        #endif
+
+        let dimension = factory.dimension
+        uniforms.dimX = dimension.x
+        uniforms.dimY = dimension.y
+        uniforms.dimZ = dimension.z
+
+        let range = factory.dataset.intensityRange
+        uniforms.voxelMinValue = range.lowerBound
+        uniforms.voxelMaxValue = range.upperBound
+
+        pushUniforms()
+    }
 }

@@ -25,6 +25,8 @@ class SceneViewController: NSObject {
     // --- MPR ---
     private var mprNode: SCNNode?
     private var mprMat: MPRPlaneMaterial?
+    private var importedVolume: DicomImportResult?
+    private let dicomLoader = DicomVolumeLoader()
 
     private var activeRenderMode: RenderMode = .dvr
     private var adaptiveOn: Bool = true
@@ -165,27 +167,18 @@ class SceneViewController: NSObject {
     }
     
     func setPart(part: VolumeCubeMaterial.BodyPart) {
-        mat.setPart(device: device, part: part)
-        volume.scale = SCNVector3(mat.scale)
-        syncMPRTransformWithVolume()
-        mat.setShift(device: device, shift: 0)
-
-        // Só configurar MPR se tivermos dados reais
-        if part != .none {
-            mprMat?.setPart(device: device, part: part)
-            if let tf = mat.tf {
-                if let tfTexture = tf.get(device: device) {
-                    mprMat?.setTransferFunction(tfTexture)
-                }
+        if part == .dicom {
+            guard let imported = importedVolume else {
+                mat.setPart(device: device, part: .dicom)
+                postVolumeUpdate(usingMprPart: .dicom)
+                return
             }
-            if let dim = mprMat?.dimension {
-                let mid = Int(dim.z / 2)
-                mprMat?.setAxial(slice: mid)
-                mprMat?.setSlab(thicknessInVoxels: 0, axis: 2, steps: 1)
-            }
+            applyImportedDataset(imported.dataset)
+            return
         }
 
-        setRenderMode(activeRenderMode)
+        mat.setPart(device: device, part: part)
+        postVolumeUpdate(usingMprPart: part)
     }
     
     func setPreset(preset: VolumeCubeMaterial.Preset) {
@@ -212,6 +205,24 @@ class SceneViewController: NSObject {
         if let tf = mat.tf {
             if let tfTexture = tf.get(device: device) {
                 mprMat?.setTransferFunction(tfTexture)
+            }
+        }
+    }
+
+    func loadDicomSeries(from url: URL, completion: @escaping (Result<DicomImportResult, Error>) -> Void) {
+        DispatchQueue.global(qos: .userInitiated).async {
+            do {
+                let result = try self.dicomLoader.loadVolume(from: url)
+                DispatchQueue.main.async {
+                    self.importedVolume = result
+                    self.applyImportedDataset(result.dataset)
+                    self.setPart(part: .dicom)
+                    completion(.success(result))
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    completion(.failure(error))
+                }
             }
         }
     }
@@ -389,5 +400,44 @@ class SceneViewController: NSObject {
         if axis == 0 { mpr.setSagittal(column:Int((mpr.dimension.x)/2)) }
 
         return node
+    }
+}
+
+private extension SceneViewController {
+    func applyImportedDataset(_ dataset: VolumeDataset) {
+        #if DEBUG
+        print("[SceneViewController] Applying imported dataset dims=\(dataset.dimensions) spacing=\(dataset.spacing) range=\(dataset.intensityRange)")
+        #endif
+        mat.setDataset(device: device, dataset: dataset)
+        postVolumeUpdate(usingMprPart: .dicom, dataset: dataset)
+    }
+
+    func postVolumeUpdate(usingMprPart part: VolumeCubeMaterial.BodyPart, dataset: VolumeDataset? = nil) {
+        volume.scale = SCNVector3(mat.scale)
+        syncMPRTransformWithVolume()
+        mat.setShift(device: device, shift: 0)
+
+        guard part != .none else {
+            setRenderMode(activeRenderMode)
+            return
+        }
+
+        if let dataset {
+            mprMat?.setDataset(device: device, dataset: dataset)
+        } else {
+            mprMat?.setPart(device: device, part: part)
+        }
+
+        if let tf = mat.tf, let tfTexture = tf.get(device: device) {
+            mprMat?.setTransferFunction(tfTexture)
+        }
+
+        if let dim = mprMat?.dimension {
+            let mid = Int(dim.z / 2)
+            mprMat?.setAxial(slice: mid)
+            mprMat?.setSlab(thicknessInVoxels: 0, axis: 2, steps: 1)
+        }
+
+        setRenderMode(activeRenderMode)
     }
 }

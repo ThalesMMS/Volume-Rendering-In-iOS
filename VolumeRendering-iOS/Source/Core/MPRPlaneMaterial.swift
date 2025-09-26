@@ -51,6 +51,12 @@ final class MPRPlaneMaterial: SCNMaterial {
     private(set) var dimension: int3 = int3(1,1,1)
     private(set) var resolution: float3 = float3(1,1,1)
 
+    /// Define dims e spacing diretamente (caminho MPR-only).
+    func setDataset(dimension: int3, resolution: float3) {
+        self.dimension = dimension
+        self.resolution = resolution
+    }
+
     // MARK: - Init
     init(device: MTLDevice) {
         super.init()

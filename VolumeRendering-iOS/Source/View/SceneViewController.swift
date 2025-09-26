@@ -30,14 +30,62 @@ class SceneViewController: NSObject {
     private var adaptiveOn: Bool = true
     private var lastStep: Float = 128
     private var interactionFactor: Float = 0.35 // 35% dos steps durante interação
+
+    private var mprAxNode: SCNNode?
+    private var mprCoNode: SCNNode?
+    private var mprSaNode: SCNNode?
     
     override public init() { super.init() }
+
+    // 0 = X, 1 = Y, 2 = Z (default: axial = Z)
+    private var currentPlaneAxis: Int = 2
 
     // Conveniência para a UI: número de fatias no eixo Z
     var mprDimZ: Int {
         Int(mprMat?.dimension.z ?? 1)
     }
+
+    // Dimensão ao longo do plano corrente (p/ step do slider)
+    var mprDimCurrent: Int {
+        guard let d = mprMat?.dimension else { return 1 }
+        switch currentPlaneAxis {
+        case 0: return Int(d.x)
+        case 1: return Int(d.y)
+        default: return Int(d.z)
+        }
+    }
     
+    func setMPRPlane(_ plane: DrawOptionModel.MPRPlane) {
+        guard let d = mprMat?.dimension else { return }
+        switch plane {
+        case .axial:
+            currentPlaneAxis = 2
+            setMPRPlaneAxial(slice: Int(d.z / 2))
+        case .coronal:
+            currentPlaneAxis = 1
+            setMPRPlaneCoronal(row: Int(d.y / 2))
+        case .sagittal:
+            currentPlaneAxis = 0
+            setMPRPlaneSagittal(column: Int(d.x / 2))
+        }
+    }
+
+    // Atualiza o índice da fatia no plano atual a partir de [0..1]
+    func updateSlice(normalizedValue: Float) {
+        guard let d = mprMat?.dimension else { return }
+        switch currentPlaneAxis {
+        case 0:
+            let n = max(1, d.x - 1)
+            setMPRPlaneSagittal(column: Int(round(normalizedValue * Float(n))))
+        case 1:
+            let n = max(1, d.y - 1)
+            setMPRPlaneCoronal(row: Int(round(normalizedValue * Float(n))))
+        default:
+            let n = max(1, d.z - 1)
+            setMPRPlaneAxial(slice: Int(round(normalizedValue * Float(n))))
+        }
+    }
+
     func onAppear(_ view: SCNView) {
          // Device Metal com fallback
         guard let dev = view.device ?? MTLCreateSystemDefaultDevice() else {
@@ -215,6 +263,8 @@ class SceneViewController: NSObject {
         // Para simplificar: axial=2, sagital=0, coronal=1. (Poderia haver um estado interno.)
         // Exemplo: considere axial por padrão:
         mprMat?.setSlab(thicknessInVoxels: thicknessInVoxels, axis: 2, steps: steps)
+        // usa o eixo do plano corrente
+        mprMat?.setSlab(thicknessInVoxels: thicknessInVoxels, axis: currentPlaneAxis, steps: steps)
     }
 
     func setMPRPlaneAxial(slice k: Int) {
@@ -291,5 +341,53 @@ class SceneViewController: NSObject {
         let sliceCount = Float(max(1, dim.z - 1))
         let sliceIndex = Int(round(normalizedValue * sliceCount))
         setMPRPlaneAxial(slice: sliceIndex)
+    }
+
+    func setDatasetForMPROnly(dimension: int3, resolution: float3) {
+        mprMat?.setDataset(dimension: dimension, resolution: resolution)
+        let scale = SCNVector3(
+            resolution.x * Float(dimension.x),
+            resolution.y * Float(dimension.y),
+            resolution.z * Float(dimension.z)
+        )
+        mprNode?.scale = scale
+    }
+
+    func enableTriPlanarMPR(_ on: Bool) {
+        if on {
+            if mprAxNode == nil { mprAxNode = makeMPRNode(axis: 2) /* axial */ }
+            if mprCoNode == nil { mprCoNode = makeMPRNode(axis: 1) /* coronal */ }
+            if mprSaNode == nil { mprSaNode = makeMPRNode(axis: 0) /* sagital */ }
+            [mprAxNode, mprCoNode, mprSaNode].forEach { $0?.isHidden = false }
+        } else {
+            [mprAxNode, mprCoNode, mprSaNode].forEach { $0?.isHidden = true }
+        }
+    }
+
+    private func makeMPRNode(axis: Int) -> SCNNode {
+        let plane = SCNPlane(width: 1, height: 1)
+        let mpr = MPRPlaneMaterial(device: device)
+        // share volume+TF
+        if let tex = (mat.value(forKey: "dicom") as? SCNMaterialProperty)?.contents as? MTLTexture {
+            mpr.setValue(SCNMaterialProperty(contents: tex), forKey: "volume")
+        } else {
+            mpr.setPart(device: device, part: .none) // fallback
+        }
+        if let tfTex = (mat.value(forKey: "transferColor") as? SCNMaterialProperty)?.contents as? MTLTexture {
+            mpr.setTransferFunction(tfTex)
+        }
+        let node = SCNNode(geometry: plane)
+        node.geometry?.materials = [mpr]
+        node.renderingOrder = 10 + axis
+        node.isHidden = false
+        root.addChildNode(node)
+        node.simdTransform = volume.simdTransform
+
+        // posicionar no meio de cada eixo
+        if axis == 2 { mpr.setAxial(slice: Int((mpr.dimension.z)/2)) }
+        if axis == 1 { mpr.setCoronal(row:  Int((mpr.dimension.y)/2)) }
+        if axis == 0 { mpr.setSagittal(column:Int((mpr.dimension.x)/2)) }
+
+        return node
     }
 }

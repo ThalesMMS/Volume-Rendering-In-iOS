@@ -1,9 +1,10 @@
 # Volume-Rendering-In-iOS
-Direct and projected volume rendering on iOS using SceneKit + Metal.
+Direct volume rendering, projection modes, and multi-planar reconstruction on iOS using SceneKit + Metal.
 
 ### Tech
 - Metal (fragment ray-marching for DVR/MIP/MinIP/AIP)
 - SceneKit (scene graph and material hosting)
+- Optional GDCM bridge for native DICOM series loading
 
 ### Data
 - Sample volumes are included in the app bundle under `VolumeRendering-iOS/Resource/Images/`
@@ -11,14 +12,18 @@ Direct and projected volume rendering on iOS using SceneKit + Metal.
   - `head.raw.zip` (Int16 signed LE)
 - Transfer Functions (TF) in `VolumeRendering-iOS/Resource/TransferFunction/`
   - `ct_arteries.tf`, `ct_entire.tf`, `ct_lung.tf`
+- DICOM: when GDCM libraries are linked (see below), `.dcm` series and zipped folders can be imported at runtime
 
 ### Features
-- DVR, Surface, MIP, MinIP, Average projections
-- Transfer Function 1D (shared between DVR and MPR)
-- Optional TF on projections (MIP/MinIP/AIP)
-- HU gating for projections with configurable window
-- MPR plane with optional TF
-- Empty‑space skipping (conservative) for DVR
+- Rendering Modes: Direct Volume Rendering (DVR), Surface, Maximum Intensity Projection (MIP), Minimum Intensity Projection (MinIP), Average Intensity Projection (AIP)
+- Projection Enhancements: optional transfer function application, HU windowing, and min/max/mean slab thickness controls
+- Tri-planar MPR: simultaneous axial/coronal/sagittal reconstructions with draggable crosshairs, slab thickness control, oblique rotation, and shared 1D transfer function
+- Transfer Function 1D: shared between DVR and MPR with presets for common CT windows
+- Empty-space skipping (conservative) for DVR performance
+- Snapshot helpers for exporting volume slices and transfer function textures during development
+
+### Contributors
+- Thales Matheus Mendonça Santos — refined MinIP, AIP, and DVR pipelines, and implemented the tri-planar MPR workflow with optional GDCM-based DICOM integration.
 
 ### How to run locally
 1. Install Git LFS and fetch large files:
@@ -54,7 +59,7 @@ Direct and projected volume rendering on iOS using SceneKit + Metal.
 
 ### Licenses
 - This project is based on `Unity Volume Rendering` (`mlavik1/UnityVolumeRendering`). See upstream for original license.
-- New code for iOS/Metal/SceneKit is provided under the same license as this repository.
+- All new code in this repository is released under the Apache License 2.0 (`LICENSE`).
 
 ### Known issues
 - Performance metrics depend on device; baseline validation targets iPhone 15 Pro Max.

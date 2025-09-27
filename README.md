@@ -1,10 +1,21 @@
 # Volume-Rendering-In-iOS
+[](https://github.com/eunwonki/Volume-Rendering-In-iOS#volume-rendering-in-ios)
+Implement volume-rendering for patient-data on iOS.
 Direct volume rendering, projection modes, and multi-planar reconstruction on iOS using SceneKit + Metal.
 
+This fork extends the original sample with enhanced projection pipelines, tri-planar multi-planar reconstruction (MPR), and optional DICOM loading through GDCM.
+
 ### Tech
-- Metal (fragment ray-marching for DVR/MIP/MinIP/AIP)
-- SceneKit (scene graph and material hosting)
-- Optional GDCM bridge for native DICOM series loading
+[](https://github.com/eunwonki/Volume-Rendering-In-iOS#tech)
+* Metal Shader (Graphic)
+* SceneKit (Scene Graph)
+* Metal fragment ray-marching for DVR/MIP/MinIP/AIP
+* Optional GDCM bridge for native DICOM series loading
+* Snapshot helpers for debugging transfer functions and volume slices
+
+### Source Project
+[](https://github.com/eunwonki/Volume-Rendering-In-iOS#source-project)
+[Unity Volume Rendering](https://github.com/mlavik1/UnityVolumeRendering)
 
 ### Data
 - Sample volumes are included in the app bundle under `VolumeRendering-iOS/Resource/Images/`
@@ -25,15 +36,35 @@ Direct volume rendering, projection modes, and multi-planar reconstruction on iO
 ### Contributors
 - Thales Matheus Mendonça Santos — refined MinIP, AIP, and DVR pipelines, and implemented the tri-planar MPR workflow with optional GDCM-based DICOM integration.
 
-### How to run locally
-1. Install Git LFS and fetch large files:
-   ```bash
-   brew install git-lfs
-   git lfs install
-   git lfs pull
-   ```
-2. Open the Xcode project `VolumeRendering-iOS.xcodeproj`.
-3. Select a device (prefer iPhone 15 Pro Max) and run.
+## How To Run in your Local
+[](https://github.com/eunwonki/Volume-Rendering-In-iOS#how-to-run-in-your-local)
+
+### At First,
+[](https://github.com/eunwonki/Volume-Rendering-In-iOS#at-first)
+You should set git-lfs setting.  
+Because raw data file is so bigger than supported in git.
+
+install git-lfs first,
+
+```bash
+brew install git-lfs
+```
+
+and set git lfs on in your local
+
+```bash
+git-lfs install
+```
+
+and pull lfs from server
+
+```bash
+git lfs pull
+```
+
+### Run from Xcode
+1. Open the Xcode project `VolumeRendering-iOS.xcodeproj`.
+2. Select a device (prefer iPhone 15 Pro Max) and run.
 
 ### DICOM via GDCM
 1. Build GDCM for iOS (static libs or an XCFramework). A simple path is to use CMake with the iOS toolchain or to reuse prebuilt binaries from your toolchain.
@@ -47,15 +78,53 @@ Direct volume rendering, projection modes, and multi-planar reconstruction on iO
 |-|-|-|
 |![](Screenshot/6.jpg)|![](Screenshot/10.jpeg)|![](Screenshot/7.jpeg)|
 
+surface rendring
+
+direct volume rendering
+
+maximum intensity projection
+
+[![](https://github.com/eunwonki/Metal-Based-Volume-Rendering-In-iOS/raw/main/Screenshot/6.jpg?raw=true)](https://github.com/eunwonki/Metal-Based-Volume-Rendering-In-iOS/blob/main/Screenshot/6.jpg?raw=true)
+
+[![](https://github.com/eunwonki/Metal-Based-Volume-Rendering-In-iOS/raw/main/Screenshot/10.jpeg?raw=true)](https://github.com/eunwonki/Metal-Based-Volume-Rendering-In-iOS/blob/main/Screenshot/10.jpeg?raw=true)
+
+[![](https://github.com/eunwonki/Metal-Based-Volume-Rendering-In-iOS/raw/main/Screenshot/7.jpeg?raw=true)](https://github.com/eunwonki/Metal-Based-Volume-Rendering-In-iOS/blob/main/Screenshot/7.jpeg?raw=true)
+
 #### Direct Volume Rendering
+[](https://github.com/eunwonki/Volume-Rendering-In-iOS#direct-volume-rendering)
+
 |CT-Coronary-Arteries|CT-Chest-Entire|CT-Lung|
 |-|-|-|
 |![](Screenshot/9.jpeg)|![](Screenshot/10.jpeg)|![](Screenshot/12.jpg)|
 
+CT-Coronary-Arteries
+
+CT-Chest-Entire
+
+CT-Lung
+
+[![](https://github.com/eunwonki/Metal-Based-Volume-Rendering-In-iOS/raw/main/Screenshot/9.jpeg?raw=true)](https://github.com/eunwonki/Metal-Based-Volume-Rendering-In-iOS/blob/main/Screenshot/9.jpeg?raw=true)
+
+[![](https://github.com/eunwonki/Metal-Based-Volume-Rendering-In-iOS/raw/main/Screenshot/10.jpeg?raw=true)](https://github.com/eunwonki/Metal-Based-Volume-Rendering-In-iOS/blob/main/Screenshot/10.jpeg?raw=true)
+
+[![](https://github.com/eunwonki/Metal-Based-Volume-Rendering-In-iOS/raw/main/Screenshot/12.jpg?raw=true)](https://github.com/eunwonki/Metal-Based-Volume-Rendering-In-iOS/blob/main/Screenshot/12.jpg?raw=true)
+
 #### Lighting
+[](https://github.com/eunwonki/Volume-Rendering-In-iOS#lighting)
+
 |Lighting Off|Lighting On|
 |-|-|
 |![](Screenshot/9.jpeg)|![](Screenshot/8.jpeg)|
+
+Lighting Off
+
+Lighting On
+
+[![](https://github.com/eunwonki/Metal-Based-Volume-Rendering-In-iOS/raw/main/Screenshot/9.jpeg?raw=true)](https://github.com/eunwonki/Metal-Based-Volume-Rendering-In-iOS/blob/main/Screenshot/9.jpeg?raw=true)
+
+[![](https://github.com/eunwonki/Metal-Based-Volume-Rendering-In-iOS/raw/main/Screenshot/8.jpeg?raw=true)](https://github.com/eunwonki/Metal-Based-Volume-Rendering-In-iOS/blob/main/Screenshot/8.jpeg?raw=true)
+
+[![](https://github.com/eunwonki/Metal-Based-Volume-Rendering-In-iOS/raw/main/Screenshot/10.jpeg?raw=true)](https://github.com/eunwonki/Metal-Based-Volume-Rendering-In-iOS/blob/main/Screenshot/10.jpeg?raw=true)
 
 ### Licenses
 - This project is based on `Unity Volume Rendering` (`mlavik1/UnityVolumeRendering`). See upstream for original license.
